@@ -1,0 +1,8 @@
+{
+  "botium": {
+    "Capabilities": {
+      "PROJECTNAME": "Directline3 Plugin Sample",
+      "CONTAINERMODE": "directline3"
+    }
+  }
+}
