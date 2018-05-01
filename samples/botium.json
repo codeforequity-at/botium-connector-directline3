@@ -2,7 +2,10 @@
   "botium": {
     "Capabilities": {
       "PROJECTNAME": "Directline3 Plugin Sample",
-      "CONTAINERMODE": "directline3"
+      "CONTAINERMODE": "directline3",
+      "DIRECTLINE3_SECRET": "7O48RCUWWTI.cwA.A9w.XyviXjUVJooJwI6I6zabVQaEAoRK_TIPx50dUazzeE8",
+      "DIRECTLINE3_WEBSOCKET": true,
+      "DIRECTLINE3_POLLINGINTERVAL": 1000
     }
   }
 }

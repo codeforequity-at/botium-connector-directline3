@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "botium-core": "../../botium-core",
-    "botium-connector-directline3": "../"
+    "botium-connector-directline3": "../",
+    "botium-core": "git://github.com/codeforequity-at/botium-core.git#ENH_55_Directline_API"
   }
 }
