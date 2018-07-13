@@ -18,6 +18,7 @@ class BotiumConnectorDirectline3 {
 
   Build () {
     debug('Build called')
+    this._stopSubscription()
     this.directLine = new DirectLine({
       secret: this.caps['DIRECTLINE3_SECRET'],
       webSocket: this.caps['DIRECTLINE3_WEBSOCKET'],
@@ -28,13 +29,21 @@ class BotiumConnectorDirectline3 {
 
   Start () {
     debug('Start called')
+    this._stopSubscription()
+    
+    this.receivedMessageIds = {}
     this.subscription = this.directLine.activity$
       .filter(activity => activity.type === 'message' && activity.from.id !== 'me')
       .subscribe(
         message => {
-          debug('received message ', message)
-          const botMsg = { sender: 'bot', sourceData: message, messageText: message.text }
-          this.queueBotSays(botMsg)
+          if (this.receivedMessageIds[message.id]) {
+            debug('ignore already received message ', message)
+          } else {
+            debug('received message ', message)
+            this.receivedMessageIds[message.id] = true
+            const botMsg = { sender: 'bot', sourceData: message, messageText: message.text }
+            this.queueBotSays(botMsg)
+          }
         }
       )
     return Promise.resolve()
@@ -62,17 +71,22 @@ class BotiumConnectorDirectline3 {
 
   Stop () {
     debug('Stop called')
-    if (this.subscription) {
-      this.subscription.unsubscribe()
-      this.subscription = null
-    }
-
+    this._stopSubscription()
     return Promise.resolve()
   }
 
   Clean () {
     debug('Clean called')
+    this._stopSubscription()
     return Promise.resolve()
+  }
+
+  _stopSubscription() {
+    if (this.subscription) {
+      debug('unsubscribing from directline subscription')
+      this.subscription.unsubscribe()
+      this.subscription = null
+    }
   }
 }
 

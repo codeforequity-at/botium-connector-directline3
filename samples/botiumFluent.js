@@ -1,13 +1,12 @@
 const BotDriver = require('botium-core').BotDriver
 
 const driver = new BotDriver()
-
-driver.BuildFluent()
+  
+ driver.BuildFluent()
   .Start()
+  .UserSaysText('Start')
   .WaitBotSaysText(console.log)
-  .UserSaysText('Show me a hero card')
-  .WaitBotSaysText(console.log)
-  .UserSaysText('Hello echo!')
+  .UserSaysText('Hallo')
   .WaitBotSaysText(console.log)
   .Stop()
   .Clean()
@@ -17,4 +16,4 @@ driver.BuildFluent()
   })
   .catch((err) => {
     console.log('ERROR: ', err)
-  })
+  })  

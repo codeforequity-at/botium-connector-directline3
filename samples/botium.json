@@ -3,7 +3,7 @@
     "Capabilities": {
       "PROJECTNAME": "Directline3 Plugin Sample",
       "CONTAINERMODE": "directline3",
-      "DIRECTLINE3_SECRET": "<MY_SECRET>",
+      "DIRECTLINE3_SECRET": "",
       "DIRECTLINE3_WEBSOCKET": true,
       "DIRECTLINE3_POLLINGINTERVAL": 1000
     }
