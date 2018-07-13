@@ -30,7 +30,7 @@ class BotiumConnectorDirectline3 {
   Start () {
     debug('Start called')
     this._stopSubscription()
-    
+
     this.receivedMessageIds = {}
     this.subscription = this.directLine.activity$
       .filter(activity => activity.type === 'message' && activity.from.id !== 'me')
@@ -81,7 +81,7 @@ class BotiumConnectorDirectline3 {
     return Promise.resolve()
   }
 
-  _stopSubscription() {
+  _stopSubscription () {
     if (this.subscription) {
       debug('unsubscribing from directline subscription')
       this.subscription.unsubscribe()
