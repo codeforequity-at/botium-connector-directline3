@@ -1,4 +1,5 @@
 const mime = require('mime-types')
+const _ = require('lodash')
 const { DirectLine, ConnectionStatus } = require('botframework-directlinejs')
 const debug = require('debug')('botium-connector-directline3')
 
@@ -60,13 +61,13 @@ class BotiumConnectorDirectline3 {
 
             const mapButton = (b) => ({
               text: b.title,
-              payload: b.value,
-              imageUri: b.image
+              payload: b.value || b.url || b.data,
+              imageUri: b.image || b.iconUrl
             })
             const mapImage = (i) => ({
               mediaUri: i.url,
               mimeType: mime.lookup(i.url) || 'application/unknown',
-              altText: i.alt
+              altText: i.alt || i.altText
             })
             const mapMedia = (m) => ({
               mediaUri: m.url,
@@ -78,11 +79,18 @@ class BotiumConnectorDirectline3 {
               if (a.contentType === 'application/vnd.microsoft.card.hero') {
                 botMsg.cards.push({
                   text: a.content.title,
-                  image: a.content.images && a.content.images.length > 0 && [ mapImage(a.content.images[0]) ],
+                  image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
                   buttons: a.content.buttons && a.content.buttons.map(mapButton)
                 })
               } else if (a.contentType === 'application/vnd.microsoft.card.adaptive') {
-                // TODO
+                const textBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type === 'TextBlock')
+                const imageBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type === 'Image')
+
+                botMsg.cards.push({
+                  text: textBlocks && textBlocks.map(t => t.text),
+                  image: imageBlocks && imageBlocks.length > 0 && mapImage(imageBlocks[0]),
+                  buttons: a.content.actions && a.content.actions.map(mapButton)
+                })
               } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
                 a.contentType === 'application/vnd.microsoft.card.audio' ||
                 a.contentType === 'application/vnd.microsoft.card.video') {
@@ -174,6 +182,24 @@ class BotiumConnectorDirectline3 {
       this.connSubscription.unsubscribe()
       this.connSubscription = null
     }
+  }
+
+  _deepFilter (item, selectFn, filterFn) {
+    let result = []
+    if (_.isArray(item)) {
+      item.filter(selectFn).forEach(subItem => {
+        result = result.concat(this._deepFilter(subItem, selectFn, filterFn))
+      })
+    } else if (selectFn(item)) {
+      if (filterFn(item)) {
+        result.push(item)
+      } else {
+        Object.getOwnPropertyNames(item).forEach(key => {
+          result = result.concat(this._deepFilter(item[key], selectFn, filterFn))
+        })
+      }
+    }
+    return result
   }
 }
 
