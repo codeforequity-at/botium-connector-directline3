@@ -1,6 +1,6 @@
 {
   "name": "botium-connector-directline3",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Botium Connector for Bot Framework Direct Line 3 API",
   "main": "dist/botium-connector-directline3-cjs.js",
   "module": "dist/botium-connector-directline3-es.js",
@@ -32,8 +32,9 @@
     "rollup-plugin-node-resolve": "^3.3.0"
   },
   "dependencies": {
-    "botframework-directlinejs": "^0.9.15",
+    "botframework-directlinejs": "^0.9.17",
     "debug": "^3.1.0",
+    "mime-types": "^2.1.20",
     "xhr2": "^0.1.4"
   }
 }
