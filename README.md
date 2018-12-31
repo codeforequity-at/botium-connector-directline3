@@ -11,7 +11,8 @@ This is a [Botium](https://github.com/codeforequity-at/botium-core) connector fo
 __Did you read the [Botium in a Nutshell](https://medium.com/@floriantreml/botium-in-a-nutshell-part-1-overview-f8d0ceaf8fb4) articles ? Be warned, without prior knowledge of Botium you won't be able to properly use this library!__
 
 ## How it works ?
-Botium runs your conversations against the Directline3 API.
+The Direct Line API 3.0, part of the Microsoft Bot Framework, enables Botium to talk to a chatbot deployed and running with the Microsoft Bot Framework.
+
 
 It can be used as any other Botium connector with all Botium Stack components:
 * [Botium CLI](https://github.com/codeforequity-at/botium-cli/)
