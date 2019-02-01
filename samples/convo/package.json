@@ -1,19 +1,12 @@
 {
   "name": "samples",
   "version": "1.0.0",
-  "description": "",
-  "main": "botiumFluent.js",
   "scripts": {
     "mocha": "mocha spec"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "botium-bindings": "latest",
-    "botium-connector-directline3": "latest",
-    "botium-core": "latest"
-  },
   "botium": {
     "convodirs": [
       "spec\\convo"
@@ -24,6 +17,6 @@
   "devDependencies": {
     "mocha": "latest",
     "botium-bindings": "latest",
-    "botium-connector-echo": "latest"
+    "botium-connector-directline3": "../../"
   }
 }

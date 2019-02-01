@@ -60,7 +60,7 @@ class BotiumConnectorDirectline3 {
             botMsg.messageText = message.text || null
 
             const mapButton = (b) => ({
-              text: b.title,
+              text: b.title || b.text,
               payload: b.value || b.url || b.data,
               imageUri: b.image || b.iconUrl
             })
@@ -78,7 +78,7 @@ class BotiumConnectorDirectline3 {
             message.attachments && message.attachments.forEach(a => {
               if (a.contentType === 'application/vnd.microsoft.card.hero') {
                 botMsg.cards.push({
-                  text: a.content.title,
+                  text: a.content.title || a.content.text,
                   image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
                   buttons: a.content.buttons && a.content.buttons.map(mapButton)
                 })
@@ -107,6 +107,25 @@ class BotiumConnectorDirectline3 {
                 })
               }
             })
+
+            message.suggestedActions && message.suggestedActions.actions && message.suggestedActions.actions.forEach(a => {
+              botMsg.buttons.push(mapButton(a))
+            })
+
+            if (!botMsg.messageText && botMsg.cards) {
+              const card = botMsg.cards.find(c => c.text)
+              if (card && _.isArray(card.text) && card.text.length > 0) {
+                botMsg.messageText = card.text[0]
+              } else if (card && _.isString(card.text)) {
+                botMsg.messageText = card.text
+              }
+            }
+            if (!botMsg.messageText && botMsg.buttons) {
+              const button = botMsg.buttons.find(b => b.text)
+              if (button) {
+                botMsg.messageText = button.text
+              }
+            }
 
             this.queueBotSays(botMsg)
           }
