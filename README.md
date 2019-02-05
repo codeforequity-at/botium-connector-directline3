@@ -91,4 +91,13 @@ Wether to use Websocket connection or HTTP polling. Usually, using Websockets is
 _in milliseconds_
 HTTP Polling interval
 
+### DIRECTLINE3_BUTTON_TYPE and DIRECTLINE3_BUTTON_VALUE_FIELD
+_Default type: event_
+
+_Default field: name_
+
+Activity fields to use for simulating button clicks by the user. Depending on your implementation, you maybe have to change the activity type or the field to use - see [here](https://docs.microsoft.com/en-us/azure/bot-service/nodejs/bot-builder-nodejs-backchannel) for some ideas.
+
+Usually, the activity type is _event_, and the button value is submitted in the _name_ field, but using those capabilities you can adapt it to your implementation.
+
 ## Open Issues and Restrictions
