@@ -8,12 +8,16 @@ global.XMLHttpRequest = require('xhr2')
 const Capabilities = {
   DIRECTLINE3_SECRET: 'DIRECTLINE3_SECRET',
   DIRECTLINE3_WEBSOCKET: 'DIRECTLINE3_WEBSOCKET',
-  DIRECTLINE3_POLLINGINTERVAL: 'DIRECTLINE3_POLLINGINTERVAL'
+  DIRECTLINE3_POLLINGINTERVAL: 'DIRECTLINE3_POLLINGINTERVAL',
+  DIRECTLINE3_BUTTON_TYPE: 'DIRECTLINE3_BUTTON_TYPE',
+  DIRECTLINE3_BUTTON_VALUE_FIELD: 'DIRECTLINE3_BUTTON_VALUE_FIELD'
 }
 
 const Defaults = {
   [Capabilities.DIRECTLINE3_WEBSOCKET]: true,
-  [Capabilities.DIRECTLINE3_POLLINGINTERVAL]: 1000
+  [Capabilities.DIRECTLINE3_POLLINGINTERVAL]: 1000,
+  [Capabilities.DIRECTLINE3_BUTTON_TYPE]: 'event',
+  [Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]: 'name'
 }
 
 class BotiumConnectorDirectline3 {
@@ -27,24 +31,25 @@ class BotiumConnectorDirectline3 {
     this.caps = Object.assign({}, Defaults, this.caps)
 
     if (!this.caps['DIRECTLINE3_SECRET']) throw new Error('DIRECTLINE3_SECRET capability required')
+    if (!this.caps['DIRECTLINE3_BUTTON_TYPE']) throw new Error('DIRECTLINE3_BUTTON_TYPE capability required')
+    if (!this.caps['DIRECTLINE3_BUTTON_VALUE_FIELD']) throw new Error('DIRECTLINE3_BUTTON_VALUE_FIELD capability required')
 
     return Promise.resolve()
   }
 
   Build () {
     debug('Build called')
-    this._stopSubscription()
-    this.directLine = new DirectLine({
-      secret: this.caps['DIRECTLINE3_SECRET'],
-      webSocket: this.caps['DIRECTLINE3_WEBSOCKET'],
-      pollingInterval: this.caps['DIRECTLINE3_POLLINGINTERVAL']
-    })
     return Promise.resolve()
   }
 
   Start () {
     debug('Start called')
     this._stopSubscription()
+    this.directLine = new DirectLine({
+      secret: this.caps['DIRECTLINE3_SECRET'],
+      webSocket: this.caps['DIRECTLINE3_WEBSOCKET'],
+      pollingInterval: this.caps['DIRECTLINE3_POLLINGINTERVAL']
+    })
 
     this.receivedMessageIds = {}
     this.subscription = this.directLine.activity$
@@ -94,11 +99,11 @@ class BotiumConnectorDirectline3 {
               } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
                 a.contentType === 'application/vnd.microsoft.card.audio' ||
                 a.contentType === 'application/vnd.microsoft.card.video') {
-                botMsg.media = botMsg.media.concat(a.content.media && a.content.media.map(mapMedia))
-                botMsg.buttons = botMsg.buttons.concat(a.content.buttons && a.content.buttons.map(mapButton))
+                botMsg.media = botMsg.media.concat((a.content.media && a.content.media.map(mapMedia)) || [])
+                botMsg.buttons = botMsg.buttons.concat((a.content.buttons && a.content.buttons.map(mapButton)) || [])
               } else if (a.contentType === 'application/vnd.microsoft.card.thumbnail') {
-                botMsg.media = botMsg.media.concat(a.content.images && a.content.images.map(mapImage))
-                botMsg.buttons = botMsg.buttons.concat(a.content.buttons && a.content.buttons.map(mapButton))
+                botMsg.media = botMsg.media.concat((a.content.images && a.content.images.map(mapImage)) || [])
+                botMsg.buttons = botMsg.buttons.concat((a.content.buttons && a.content.buttons.map(mapButton)) || [])
               } else if (a.contentType && a.contentUrl) {
                 botMsg.media.push({
                   mediaUri: a.contentUrl,
@@ -161,11 +166,22 @@ class BotiumConnectorDirectline3 {
   UserSays (msg) {
     debug('UserSays called')
     return new Promise((resolve, reject) => {
-      this.directLine.postActivity({
-        from: { id: msg.sender },
-        type: 'message',
-        text: msg.messageText
-      }).subscribe(
+      const activity = {
+        from: { id: msg.sender }
+      }
+      if (msg.buttons && msg.buttons.length > 0 && msg.buttons[0].text) {
+        activity.type = this.caps[Capabilities.DIRECTLINE3_BUTTON_TYPE]
+        activity[this.caps[Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]] = msg.buttons[0].text
+      } else {
+        activity.type = 'message'
+        activity.text = msg.messageText
+      }
+      if (msg.media && msg.media.length > 0) {
+        return reject(new Error(`Media Attachments currently not possible.`))
+      }
+      debug('Posting activity ', JSON.stringify(activity, null, 2))
+
+      this.directLine.postActivity(activity).subscribe(
         id => {
           debug('Posted activity, assigned ID ', id)
           resolve()

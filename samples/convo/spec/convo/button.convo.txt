@@ -1,0 +1,16 @@
+button
+
+#me
+help
+
+#bot
+Welcome to Mockbot v4!
+
+#bot
+BUTTONS Show Markdown using Adaptive Card
+
+#me
+BUTTON card markdown
+
+#bot
+Showing  markdown
