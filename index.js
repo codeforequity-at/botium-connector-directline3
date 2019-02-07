@@ -39,18 +39,17 @@ class BotiumConnectorDirectline3 {
 
   Build () {
     debug('Build called')
-    this._stopSubscription()
-    this.directLine = new DirectLine({
-      secret: this.caps['DIRECTLINE3_SECRET'],
-      webSocket: this.caps['DIRECTLINE3_WEBSOCKET'],
-      pollingInterval: this.caps['DIRECTLINE3_POLLINGINTERVAL']
-    })
     return Promise.resolve()
   }
 
   Start () {
     debug('Start called')
     this._stopSubscription()
+    this.directLine = new DirectLine({
+      secret: this.caps['DIRECTLINE3_SECRET'],
+      webSocket: this.caps['DIRECTLINE3_WEBSOCKET'],
+      pollingInterval: this.caps['DIRECTLINE3_POLLINGINTERVAL']
+    })
 
     this.receivedMessageIds = {}
     this.subscription = this.directLine.activity$
@@ -100,11 +99,11 @@ class BotiumConnectorDirectline3 {
               } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
                 a.contentType === 'application/vnd.microsoft.card.audio' ||
                 a.contentType === 'application/vnd.microsoft.card.video') {
-                botMsg.media = botMsg.media.concat(a.content.media && a.content.media.map(mapMedia))
-                botMsg.buttons = botMsg.buttons.concat(a.content.buttons && a.content.buttons.map(mapButton))
+                botMsg.media = botMsg.media.concat((a.content.media && a.content.media.map(mapMedia)) || [])
+                botMsg.buttons = botMsg.buttons.concat((a.content.buttons && a.content.buttons.map(mapButton)) || [])
               } else if (a.contentType === 'application/vnd.microsoft.card.thumbnail') {
-                botMsg.media = botMsg.media.concat(a.content.images && a.content.images.map(mapImage))
-                botMsg.buttons = botMsg.buttons.concat(a.content.buttons && a.content.buttons.map(mapButton))
+                botMsg.media = botMsg.media.concat((a.content.images && a.content.images.map(mapImage)) || [])
+                botMsg.buttons = botMsg.buttons.concat((a.content.buttons && a.content.buttons.map(mapButton)) || [])
               } else if (a.contentType && a.contentUrl) {
                 botMsg.media.push({
                   mediaUri: a.contentUrl,
@@ -178,11 +177,9 @@ class BotiumConnectorDirectline3 {
         activity.text = msg.messageText
       }
       if (msg.media && msg.media.length > 0) {
-        activity.attachments = msg.media.filter(m => m.mediaUri).map(m => ({
-          contentType: m.mimeType,
-          contentUrl: m.mediaUri
-        }))
+        return reject(new Error(`Media Attachments currently not possible.`))
       }
+      debug('Posting activity ', JSON.stringify(activity, null, 2))
 
       this.directLine.postActivity(activity).subscribe(
         id => {

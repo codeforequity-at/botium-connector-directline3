@@ -5,7 +5,9 @@
       "CONTAINERMODE": "directline3",
       "DIRECTLINE3_SECRET": "my-directline-secret",
       "DIRECTLINE3_WEBSOCKET": true,
-      "DIRECTLINE3_POLLINGINTERVAL": 1000
+      "DIRECTLINE3_POLLINGINTERVAL": 1000,
+      "DIRECTLINE3_BUTTON_TYPE": "message",
+      "DIRECTLINE3_BUTTON_VALUE_FIELD": "text"
     }
   }
 }

@@ -2,11 +2,8 @@
   "name": "samples",
   "version": "1.0.0",
   "scripts": {
-    "mocha": "mocha spec"
+    "test": "mocha spec"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "botium": {
     "convodirs": [
       "spec\\convo"
@@ -15,8 +12,8 @@
     "expandUtterancesToConvos": false
   },
   "devDependencies": {
-    "mocha": "latest",
     "botium-bindings": "latest",
-    "botium-connector-directline3": "../../"
+    "botium-connector-directline3": "../../",
+    "mocha": "latest"
   }
 }

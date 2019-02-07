@@ -60,3 +60,4 @@ typings/
 dist
 package-lock.json
 yarn.lock
+botium.local.json
