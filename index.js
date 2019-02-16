@@ -1,3 +1,4 @@
+const uuidv4 = require('uuid/v4')
 const mime = require('mime-types')
 const _ = require('lodash')
 const { DirectLine, ConnectionStatus } = require('botframework-directlinejs')
@@ -9,6 +10,7 @@ const Capabilities = {
   DIRECTLINE3_SECRET: 'DIRECTLINE3_SECRET',
   DIRECTLINE3_WEBSOCKET: 'DIRECTLINE3_WEBSOCKET',
   DIRECTLINE3_POLLINGINTERVAL: 'DIRECTLINE3_POLLINGINTERVAL',
+  DIRECTLINE3_GENERATE_USERNAME: 'DIRECTLINE3_GENERATE_USERNAME',
   DIRECTLINE3_BUTTON_TYPE: 'DIRECTLINE3_BUTTON_TYPE',
   DIRECTLINE3_BUTTON_VALUE_FIELD: 'DIRECTLINE3_BUTTON_VALUE_FIELD'
 }
@@ -16,6 +18,7 @@ const Capabilities = {
 const Defaults = {
   [Capabilities.DIRECTLINE3_WEBSOCKET]: true,
   [Capabilities.DIRECTLINE3_POLLINGINTERVAL]: 1000,
+  [Capabilities.DIRECTLINE3_GENERATE_USERNAME]: false,
   [Capabilities.DIRECTLINE3_BUTTON_TYPE]: 'event',
   [Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]: 'name'
 }
@@ -51,9 +54,15 @@ class BotiumConnectorDirectline3 {
       pollingInterval: this.caps['DIRECTLINE3_POLLINGINTERVAL']
     })
 
+    if (this.caps['DIRECTLINE3_GENERATE_USERNAME']) {
+      this.me = uuidv4()
+    } else {
+      this.me = 'me'
+    }
+
     this.receivedMessageIds = {}
     this.subscription = this.directLine.activity$
-      .filter(activity => activity.type === 'message' && activity.from.id !== 'me')
+      .filter(activity => activity.type === 'message' && activity.from.id !== this.me)
       .subscribe(
         message => {
           if (this.receivedMessageIds[message.id]) {
@@ -182,7 +191,7 @@ class BotiumConnectorDirectline3 {
     debug('UserSays called')
     return new Promise((resolve, reject) => {
       const activity = {
-        from: { id: msg.sender }
+        from: { id: this.me }
       }
       if (msg.buttons && msg.buttons.length > 0 && (msg.buttons[0].text || msg.buttons[0].payload)) {
         let payload = msg.buttons[0].payload || msg.buttons[0].text
