@@ -1,3 +1,4 @@
+const uuidv4 = require('uuid/v4')
 const mime = require('mime-types')
 const _ = require('lodash')
 const { DirectLine, ConnectionStatus } = require('botframework-directlinejs')
@@ -9,6 +10,7 @@ const Capabilities = {
   DIRECTLINE3_SECRET: 'DIRECTLINE3_SECRET',
   DIRECTLINE3_WEBSOCKET: 'DIRECTLINE3_WEBSOCKET',
   DIRECTLINE3_POLLINGINTERVAL: 'DIRECTLINE3_POLLINGINTERVAL',
+  DIRECTLINE3_GENERATE_USERNAME: 'DIRECTLINE3_GENERATE_USERNAME',
   DIRECTLINE3_BUTTON_TYPE: 'DIRECTLINE3_BUTTON_TYPE',
   DIRECTLINE3_BUTTON_VALUE_FIELD: 'DIRECTLINE3_BUTTON_VALUE_FIELD'
 }
@@ -16,6 +18,7 @@ const Capabilities = {
 const Defaults = {
   [Capabilities.DIRECTLINE3_WEBSOCKET]: true,
   [Capabilities.DIRECTLINE3_POLLINGINTERVAL]: 1000,
+  [Capabilities.DIRECTLINE3_GENERATE_USERNAME]: false,
   [Capabilities.DIRECTLINE3_BUTTON_TYPE]: 'event',
   [Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]: 'name'
 }
@@ -51,9 +54,15 @@ class BotiumConnectorDirectline3 {
       pollingInterval: this.caps['DIRECTLINE3_POLLINGINTERVAL']
     })
 
+    if (this.caps['DIRECTLINE3_GENERATE_USERNAME']) {
+      this.me = uuidv4()
+    } else {
+      this.me = 'me'
+    }
+
     this.receivedMessageIds = {}
     this.subscription = this.directLine.activity$
-      .filter(activity => activity.type === 'message' && activity.from.id !== 'me')
+      .filter(activity => activity.type === 'message' && activity.from.id !== this.me)
       .subscribe(
         message => {
           if (this.receivedMessageIds[message.id]) {
@@ -84,8 +93,11 @@ class BotiumConnectorDirectline3 {
               if (a.contentType === 'application/vnd.microsoft.card.hero') {
                 botMsg.cards.push({
                   text: a.content.title || a.content.text,
+                  subtext: a.content.subtitle,
+                  content: a.content.text,
                   image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
-                  buttons: a.content.buttons && a.content.buttons.map(mapButton)
+                  buttons: a.content.buttons && a.content.buttons.map(mapButton),
+                  media: a.content.images && a.content.images.map(mapImage)
                 })
               } else if (a.contentType === 'application/vnd.microsoft.card.adaptive') {
                 const textBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type === 'TextBlock')
@@ -99,11 +111,23 @@ class BotiumConnectorDirectline3 {
               } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
                 a.contentType === 'application/vnd.microsoft.card.audio' ||
                 a.contentType === 'application/vnd.microsoft.card.video') {
-                botMsg.media = botMsg.media.concat((a.content.media && a.content.media.map(mapMedia)) || [])
-                botMsg.buttons = botMsg.buttons.concat((a.content.buttons && a.content.buttons.map(mapButton)) || [])
+                botMsg.cards.push({
+                  text: a.content.title || a.content.text,
+                  subtext: a.content.subtitle,
+                  content: a.content.text,
+                  image: a.content.image && mapImage(a.content.image),
+                  buttons: a.content.buttons && a.content.buttons.map(mapButton),
+                  media: a.content.media && a.content.media.map(mapMedia)
+                })
               } else if (a.contentType === 'application/vnd.microsoft.card.thumbnail') {
-                botMsg.media = botMsg.media.concat((a.content.images && a.content.images.map(mapImage)) || [])
-                botMsg.buttons = botMsg.buttons.concat((a.content.buttons && a.content.buttons.map(mapButton)) || [])
+                botMsg.cards.push({
+                  text: a.content.title || a.content.text,
+                  subtext: a.content.subtitle,
+                  content: a.content.text,
+                  image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
+                  buttons: a.content.buttons && a.content.buttons.map(mapButton),
+                  media: a.content.images && a.content.images.map(mapImage)
+                })
               } else if (a.contentType && a.contentUrl) {
                 botMsg.media.push({
                   mediaUri: a.contentUrl,
@@ -167,11 +191,16 @@ class BotiumConnectorDirectline3 {
     debug('UserSays called')
     return new Promise((resolve, reject) => {
       const activity = {
-        from: { id: msg.sender }
+        from: { id: this.me }
       }
-      if (msg.buttons && msg.buttons.length > 0 && msg.buttons[0].text) {
+      if (msg.buttons && msg.buttons.length > 0 && (msg.buttons[0].text || msg.buttons[0].payload)) {
+        let payload = msg.buttons[0].payload || msg.buttons[0].text
+        try {
+          payload = JSON.parse(payload)
+        } catch (err) {
+        }
         activity.type = this.caps[Capabilities.DIRECTLINE3_BUTTON_TYPE]
-        activity[this.caps[Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]] = msg.buttons[0].text
+        activity[this.caps[Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]] = payload
       } else {
         activity.type = 'message'
         activity.text = msg.messageText
@@ -188,7 +217,7 @@ class BotiumConnectorDirectline3 {
         },
         err => {
           debug('Error posting activity', err)
-          reject(err)
+          reject(new Error(`Error posting activity: ${err}`))
         }
       )
     })
