@@ -169,9 +169,14 @@ class BotiumConnectorDirectline3 {
       const activity = {
         from: { id: msg.sender }
       }
-      if (msg.buttons && msg.buttons.length > 0 && msg.buttons[0].text) {
+      if (msg.buttons && msg.buttons.length > 0 && (msg.buttons[0].text || msg.buttons[0].payload)) {
+        let payload = msg.buttons[0].payload || msg.buttons[0].text
+        try {
+          payload = JSON.parse(payload)
+        } catch (err) {
+        }
         activity.type = this.caps[Capabilities.DIRECTLINE3_BUTTON_TYPE]
-        activity[this.caps[Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]] = msg.buttons[0].text
+        activity[this.caps[Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]] = payload
       } else {
         activity.type = 'message'
         activity.text = msg.messageText
