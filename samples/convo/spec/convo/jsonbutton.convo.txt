@@ -1,14 +1,6 @@
 jsonbutton
 
 #me
-help
-
-#bot
-Welcome to Mockbot v4!
-
-#bot
-
-#me
 BUTTON {"hello": "World!"}
 
 #bot

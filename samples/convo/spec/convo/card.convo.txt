@@ -1,0 +1,11 @@
+card
+
+#me
+BUTTON thumbnailcard
+
+#bot
+Welcome to Mockbot v4!
+
+#bot
+Microsoft Surface Pro
+MEDIA surface1.jpg

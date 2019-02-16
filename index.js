@@ -84,8 +84,11 @@ class BotiumConnectorDirectline3 {
               if (a.contentType === 'application/vnd.microsoft.card.hero') {
                 botMsg.cards.push({
                   text: a.content.title || a.content.text,
+                  subtext: a.content.subtitle,
+                  content: a.content.text,
                   image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
-                  buttons: a.content.buttons && a.content.buttons.map(mapButton)
+                  buttons: a.content.buttons && a.content.buttons.map(mapButton),
+                  media: a.content.images && a.content.images.map(mapImage)
                 })
               } else if (a.contentType === 'application/vnd.microsoft.card.adaptive') {
                 const textBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type === 'TextBlock')
@@ -99,11 +102,23 @@ class BotiumConnectorDirectline3 {
               } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
                 a.contentType === 'application/vnd.microsoft.card.audio' ||
                 a.contentType === 'application/vnd.microsoft.card.video') {
-                botMsg.media = botMsg.media.concat((a.content.media && a.content.media.map(mapMedia)) || [])
-                botMsg.buttons = botMsg.buttons.concat((a.content.buttons && a.content.buttons.map(mapButton)) || [])
+                botMsg.cards.push({
+                  text: a.content.title || a.content.text,
+                  subtext: a.content.subtitle,
+                  content: a.content.text,
+                  image: a.content.image && mapImage(a.content.image),
+                  buttons: a.content.buttons && a.content.buttons.map(mapButton),
+                  media: a.content.media && a.content.media.map(mapMedia)
+                })
               } else if (a.contentType === 'application/vnd.microsoft.card.thumbnail') {
-                botMsg.media = botMsg.media.concat((a.content.images && a.content.images.map(mapImage)) || [])
-                botMsg.buttons = botMsg.buttons.concat((a.content.buttons && a.content.buttons.map(mapButton)) || [])
+                botMsg.cards.push({
+                  text: a.content.title || a.content.text,
+                  subtext: a.content.subtitle,
+                  content: a.content.text,
+                  image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
+                  buttons: a.content.buttons && a.content.buttons.map(mapButton),
+                  media: a.content.images && a.content.images.map(mapImage)
+                })
               } else if (a.contentType && a.contentUrl) {
                 botMsg.media.push({
                   mediaUri: a.contentUrl,
@@ -193,7 +208,7 @@ class BotiumConnectorDirectline3 {
         },
         err => {
           debug('Error posting activity', err)
-          reject(err)
+          reject(new Error(`Error posting activity: ${err}`))
         }
       )
     })
