@@ -9,6 +9,7 @@ global.XMLHttpRequest = require('xhr2')
 const Capabilities = {
   DIRECTLINE3_SECRET: 'DIRECTLINE3_SECRET',
   DIRECTLINE3_WEBSOCKET: 'DIRECTLINE3_WEBSOCKET',
+  DIRECTLINE3_DOMAIN: 'DIRECTLINE3_DOMAIN',
   DIRECTLINE3_POLLINGINTERVAL: 'DIRECTLINE3_POLLINGINTERVAL',
   DIRECTLINE3_GENERATE_USERNAME: 'DIRECTLINE3_GENERATE_USERNAME',
   DIRECTLINE3_BUTTON_TYPE: 'DIRECTLINE3_BUTTON_TYPE',
@@ -51,6 +52,7 @@ class BotiumConnectorDirectline3 {
     this.directLine = new DirectLine({
       secret: this.caps['DIRECTLINE3_SECRET'],
       webSocket: this.caps['DIRECTLINE3_WEBSOCKET'],
+      domain: this.caps['DIRECTLINE3_DOMAIN'],
       pollingInterval: this.caps['DIRECTLINE3_POLLINGINTERVAL']
     })
 
