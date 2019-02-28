@@ -83,6 +83,9 @@ The secret for accessing your chatbot from the Azure Portal.
 
 _Note: it is advised to not add this secret to a configuration file but hand it over by environment variable BOTIUM_DIRECTLINE3_SECRET_
 
+### DIRECTLINE3_DOMAIN
+If not using the default Direct Line endpoint, e.g. if you are using a region-specific endpoint, put its full URL here
+
 ### DIRECTLINE3_WEBSOCKET
 _true or false_
 Wether to use Websocket connection or HTTP polling. Usually, using Websockets is prefered, but sometimes this is not possible (maybe with blocking proxies).
