@@ -156,7 +156,7 @@ class BotiumConnectorDirectline3 {
               }
             }
 
-            this.queueBotSays(botMsg)
+            setTimeout(() => this.queueBotSays(botMsg), 0)
           }
         }
       )
