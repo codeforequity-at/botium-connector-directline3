@@ -105,6 +105,13 @@ Usually, the activity type is _event_, and the button value is submitted in the 
 
 _Note: if you want to disable this, then set DIRECTLINE3_BUTTON_TYPE to "message" and DIRECTLINE3_BUTTON_VALUE_FIELD to "text", to make the button clicks appear as normal user text input_
 
+### DIRECTLINE3_GENERATE_USERNAME
+_Default: false_
+
+Botium simulates conversations with username _me_. Depending on your implementation, running multiple conversations with the same username could make them fail (for example, session handling).
+
+Setting this capability to _true_ will generate a new username (uuid) for each conversation.
+
 ## Open Issues and Restrictions
 
 * Media Attachments currently cannot be sent, as Node.js environment is [not fully supported by DirectLine](https://github.com/Microsoft/BotFramework-DirectLineJS/issues/107)
