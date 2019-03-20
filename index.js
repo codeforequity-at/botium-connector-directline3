@@ -3,6 +3,11 @@ const mime = require('mime-types')
 const _ = require('lodash')
 const { DirectLine, ConnectionStatus } = require('botframework-directlinejs')
 const debug = require('debug')('botium-connector-directline3')
+const FormData = require('form-data')
+const fetch = require('node-fetch')
+const {parse: parseUrl} = require('url')
+const fs = require('fs')
+const path = require('path')
 
 global.XMLHttpRequest = require('xhr2')
 
@@ -207,21 +212,71 @@ class BotiumConnectorDirectline3 {
         activity.type = 'message'
         activity.text = msg.messageText
       }
-      if (msg.media && msg.media.length > 0) {
-        return reject(new Error(`Media Attachments currently not possible.`))
-      }
-      debug('Posting activity ', JSON.stringify(activity, null, 2))
 
-      this.directLine.postActivity(activity).subscribe(
-        id => {
-          debug('Posted activity, assigned ID ', id)
-          resolve()
-        },
-        err => {
-          debug('Error posting activity', err)
-          reject(new Error(`Error posting activity: ${err}`))
+      if (msg.media && msg.media.length > 0) {
+        debug('Posting activity with attachments ', JSON.stringify(activity, null, 2))
+        const formData = new FormData()
+
+        formData.append('activity', Buffer.from(JSON.stringify(activity)), {
+          contentType: 'application/vnd.microsoft.activity',
+          filename: 'blob'
+        })
+
+        for (let i = 0; i < msg.media.length; i++) {
+          const attachment = msg.media[i]
+
+          if (attachment.contentUrl.startsWith('file://')) {
+            const file = attachment.contentUrl.split('file://')[1]
+            let filePath = ''
+            if (file.startsWith('/')) {
+              filePath = file
+            } else {
+              // TODO: how to get the folder the current test is in…
+              filePath = path.join(__dirname, file)
+            }
+            formData.append('file', fs.createReadStream(filePath), {
+              filename: attachment.name
+            })
+          } else {
+            formData.append('file', fetch(attachment.contentUrl), {
+              filename: attachment.name
+            })
+          }
         }
-      )
+        const params = parseUrl(`${this.directLine.domain}/conversations/${this.directLine.conversationId}/upload`)
+  
+        const options = {
+          port: params.port,
+          path: `${params.pathname}?userId=${activity.from.id}`,
+          host: params.hostname,
+          protocol: params.protocol,
+          headers: { ...this.directLine.commonHeaders() }
+        }
+  
+        formData.submit(options, (err, res) => {
+          if (!err) {
+            const json = res.json()
+            debug('Posted activity, assigned ID ', json.id)
+            resolve()
+          } else {
+            debug('Error posting activity', err)
+            reject(new Error(`Error posting activity: ${err}`))
+          }
+        })
+      } else {
+        debug('Posting activity ', JSON.stringify(activity, null, 2))
+
+        this.directLine.postActivity(activity).subscribe(
+          id => {
+            debug('Posted activity, assigned ID ', id)
+            resolve()
+          },
+          err => {
+            debug('Error posting activity', err)
+            reject(new Error(`Error posting activity: ${err}`))
+          }
+        )
+      }
     })
   }
 
