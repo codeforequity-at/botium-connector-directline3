@@ -5,7 +5,6 @@ const { DirectLine, ConnectionStatus } = require('botframework-directlinejs')
 const debug = require('debug')('botium-connector-directline3')
 const FormData = require('form-data')
 const fetch = require('node-fetch')
-const {parse: parseUrl} = require('url')
 const fs = require('fs')
 const path = require('path')
 
@@ -196,7 +195,7 @@ class BotiumConnectorDirectline3 {
 
   UserSays (msg) {
     debug('UserSays called')
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const activity = {
         from: { id: this.me }
       }
@@ -224,51 +223,42 @@ class BotiumConnectorDirectline3 {
 
         for (let i = 0; i < msg.media.length; i++) {
           const attachment = msg.media[i]
+          const attachmentName = path.basename(attachment.mediaUri)
 
-          if (attachment.contentUrl.startsWith('file://')) {
-            const file = attachment.contentUrl.split('file://')[1]
-            let filePath = ''
-            if (file.startsWith('/')) {
-              filePath = file
-            } else {
-              // TODO: how to get the folder the current test is in…
-              filePath = path.join(__dirname, file)
-            }
-            formData.append('file', fs.createReadStream(filePath), {
-              filename: attachment.name
+          if (attachment.mediaUri.startsWith('file://')) {
+            const filepath = attachment.mediaUri.split('file://')[1]
+            formData.append('file', fs.createReadStream(filepath), {
+              filename: attachmentName
             })
           } else {
-            formData.append('file', fetch(attachment.contentUrl), {
-              filename: attachment.name
+            formData.append('file', (await fetch(attachment.mediaUri)).body, {
+              filename: attachmentName
             })
           }
         }
-        const params = parseUrl(`${this.directLine.domain}/conversations/${this.directLine.conversationId}/upload`)
-  
-        const options = {
-          port: params.port,
-          path: `${params.pathname}?userId=${activity.from.id}`,
-          host: params.hostname,
-          protocol: params.protocol,
-          headers: { ...this.directLine.commonHeaders() }
-        }
-  
-        formData.submit(options, (err, res) => {
-          if (!err) {
-            const json = res.json()
-            debug('Posted activity, assigned ID ', json.id)
-            resolve()
-          } else {
-            debug('Error posting activity', err)
-            reject(new Error(`Error posting activity: ${err}`))
-          }
+
+        // Ensure directline is connected!
+        await this.directLine.checkConnection(true)
+        fetch(`${this.directLine.domain}/conversations/${this.directLine.conversationId}/upload?userId=${activity.from.id}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.directLine.token}`
+          },
+          body: formData
+        }).catch(err => {
+          debug('Error posting activity', err)
+          reject(new Error(`Error posting activity: ${err}`))
+        }).then(async (res) => {
+          const json = await res.json()
+          debug('Posted activity, assigned ID:', json.id)
+          resolve()
         })
       } else {
         debug('Posting activity ', JSON.stringify(activity, null, 2))
 
         this.directLine.postActivity(activity).subscribe(
           id => {
-            debug('Posted activity, assigned ID ', id)
+            debug('Posted activity, assigned ID:', id)
             resolve()
           },
           err => {
