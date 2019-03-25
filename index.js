@@ -231,7 +231,9 @@ class BotiumConnectorDirectline3 {
               filename: attachmentName
             })
           } else {
-            formData.append('file', (await fetch(attachment.mediaUri)).body, {
+            const { body } = await fetch(attachment.mediaUri)
+
+            formData.append('file', body, {
               filename: attachmentName
             })
           }
