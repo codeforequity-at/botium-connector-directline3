@@ -20,7 +20,7 @@ export default {
     commonjs({
       exclude: 'node_modules/**'
     }),
-    buble(),
+    buble({ transforms: { asyncAwait: false } }),
     json()
   ]
 };

@@ -3,6 +3,10 @@ const mime = require('mime-types')
 const _ = require('lodash')
 const { DirectLine, ConnectionStatus } = require('botframework-directlinejs')
 const debug = require('debug')('botium-connector-directline3')
+const FormData = require('form-data')
+const fetch = require('node-fetch')
+const fs = require('fs')
+const path = require('path')
 
 global.XMLHttpRequest = require('xhr2')
 
@@ -191,7 +195,7 @@ class BotiumConnectorDirectline3 {
 
   UserSays (msg) {
     debug('UserSays called')
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const activity = {
         from: { id: this.me }
       }
@@ -207,21 +211,62 @@ class BotiumConnectorDirectline3 {
         activity.type = 'message'
         activity.text = msg.messageText
       }
-      if (msg.media && msg.media.length > 0) {
-        return reject(new Error(`Media Attachments currently not possible.`))
-      }
-      debug('Posting activity ', JSON.stringify(activity, null, 2))
 
-      this.directLine.postActivity(activity).subscribe(
-        id => {
-          debug('Posted activity, assigned ID ', id)
-          resolve()
-        },
-        err => {
+      if (msg.media && msg.media.length > 0) {
+        debug('Posting activity with attachments ', JSON.stringify(activity, null, 2))
+        const formData = new FormData()
+
+        formData.append('activity', Buffer.from(JSON.stringify(activity)), {
+          contentType: 'application/vnd.microsoft.activity',
+          filename: 'blob'
+        })
+
+        for (let i = 0; i < msg.media.length; i++) {
+          const attachment = msg.media[i]
+          const attachmentName = path.basename(attachment.mediaUri)
+
+          if (attachment.mediaUri.startsWith('file://')) {
+            const filepath = attachment.mediaUri.split('file://')[1]
+            formData.append('file', fs.createReadStream(filepath), {
+              filename: attachmentName
+            })
+          } else {
+            formData.append('file', (await fetch(attachment.mediaUri)).body, {
+              filename: attachmentName
+            })
+          }
+        }
+
+        // Ensure directline is connected!
+        await this.directLine.checkConnection(true)
+        fetch(`${this.directLine.domain}/conversations/${this.directLine.conversationId}/upload?userId=${activity.from.id}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.directLine.token}`
+          },
+          body: formData
+        }).catch(err => {
           debug('Error posting activity', err)
           reject(new Error(`Error posting activity: ${err}`))
-        }
-      )
+        }).then(async (res) => {
+          const json = await res.json()
+          debug('Posted activity, assigned ID:', json.id)
+          resolve()
+        })
+      } else {
+        debug('Posting activity ', JSON.stringify(activity, null, 2))
+
+        this.directLine.postActivity(activity).subscribe(
+          id => {
+            debug('Posted activity, assigned ID:', id)
+            resolve()
+          },
+          err => {
+            debug('Error posting activity', err)
+            reject(new Error(`Error posting activity: ${err}`))
+          }
+        )
+      }
     })
   }
 

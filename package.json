@@ -34,8 +34,10 @@
   "dependencies": {
     "botframework-directlinejs": "^0.9.17",
     "debug": "^3.1.0",
+    "form-data": "^2.3.3",
     "lodash": "^4.17.11",
     "mime-types": "^2.1.20",
+    "node-fetch": "^2.3.0",
     "uuid": "^3.3.2",
     "xhr2": "^0.1.4"
   }
