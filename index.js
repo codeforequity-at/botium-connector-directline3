@@ -1,3 +1,4 @@
+const util = require('util')
 const uuidv4 = require('uuid/v4')
 const mime = require('mime-types')
 const _ = require('lodash')
@@ -212,6 +213,13 @@ class BotiumConnectorDirectline3 {
         activity.text = msg.messageText
       }
 
+      if (msg.forms) {
+        activity.value = {}
+        msg.forms.forEach(f => {
+          activity.value[f.name] = f.value
+        })
+      }
+
       if (msg.media && msg.media.length > 0) {
         debug('Posting activity with attachments ', JSON.stringify(activity, null, 2))
         const formData = new FormData()
@@ -248,12 +256,16 @@ class BotiumConnectorDirectline3 {
           },
           body: formData
         }).catch(err => {
-          debug('Error posting activity', err)
+          debug('Error posting activity with attachments', err)
           reject(new Error(`Error posting activity: ${err}`))
         }).then(async (res) => {
           const json = await res.json()
-          debug('Posted activity, assigned ID:', json.id)
-          resolve()
+          if (json.id) {
+            debug('Posted activity with attachments, assigned ID:', json.id)
+            resolve()
+          } else {
+            reject(new Error(`Error posting activity with attachments: ${util.inspect(json)}`))
+          }
         })
       } else {
         debug('Posting activity ', JSON.stringify(activity, null, 2))
