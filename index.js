@@ -49,7 +49,8 @@ class BotiumConnectorDirectline3 {
 
   Validate () {
     debug('Validate called')
-    this.caps = Object.assign({}, Defaults, this.caps)
+
+    this.caps = Object.assign({}, Defaults, _.pickBy(this.caps, (value, key) => !Defaults.hasOwnProperty(key) || !_.isString(value) || value !== ''))
 
     if (!this.caps['DIRECTLINE3_SECRET']) throw new Error('DIRECTLINE3_SECRET capability required')
     if (!this.caps['DIRECTLINE3_BUTTON_TYPE']) throw new Error('DIRECTLINE3_BUTTON_TYPE capability required')
