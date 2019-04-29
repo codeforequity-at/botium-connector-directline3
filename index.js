@@ -168,6 +168,10 @@ class BotiumConnectorDirectline3 {
                     mimeType: a.contentType,
                     altText: a.name
                   })
+                } else if (a.content && a.content.buttons && a.content.buttons.length > 0) {
+                  a.content.buttons.forEach(b => {
+                    botMsg.buttons.push(mapButton(b))
+                  })
                 }
               })
 
