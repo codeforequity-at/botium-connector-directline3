@@ -250,7 +250,11 @@ class BotiumConnectorDirectline3 {
         activity.type = this.caps[Capabilities.DIRECTLINE3_BUTTON_TYPE]
         activity[this.caps[Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]] = payload
       } else {
-        activity.type = 'message'
+        if (msg.sourceData && msg.sourceData.type) {
+          activity.type = msg.sourceData.type
+        } else {
+          activity.type = 'message'
+        }
         activity.text = msg.messageText
       }
 
