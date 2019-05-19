@@ -49,7 +49,8 @@ class BotiumConnectorDirectline3 {
 
   Validate () {
     debug('Validate called')
-    this.caps = Object.assign({}, Defaults, this.caps)
+
+    this.caps = Object.assign({}, Defaults, _.pickBy(this.caps, (value, key) => !Defaults.hasOwnProperty(key) || !_.isString(value) || value !== ''))
 
     if (!this.caps['DIRECTLINE3_SECRET']) throw new Error('DIRECTLINE3_SECRET capability required')
     if (!this.caps['DIRECTLINE3_BUTTON_TYPE']) throw new Error('DIRECTLINE3_BUTTON_TYPE capability required')
@@ -167,6 +168,10 @@ class BotiumConnectorDirectline3 {
                     mimeType: a.contentType,
                     altText: a.name
                   })
+                } else if (a.content && a.content.buttons && a.content.buttons.length > 0) {
+                  a.content.buttons.forEach(b => {
+                    botMsg.buttons.push(mapButton(b))
+                  })
                 }
               })
 
@@ -250,7 +255,11 @@ class BotiumConnectorDirectline3 {
         activity.type = this.caps[Capabilities.DIRECTLINE3_BUTTON_TYPE]
         activity[this.caps[Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]] = payload
       } else {
-        activity.type = 'message'
+        if (msg.sourceData && msg.sourceData.type) {
+          activity.type = msg.sourceData.type
+        } else {
+          activity.type = 'message'
+        }
         activity.text = msg.messageText
       }
 
