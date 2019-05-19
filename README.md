@@ -92,6 +92,8 @@ If not using the default Direct Line endpoint, e.g. if you are using a region-sp
 _true or false_
 Wether to use Websocket connection or HTTP polling. Usually, using Websockets is prefered, but sometimes this is not possible (maybe with blocking proxies).
 
+_Currently, only HTTP polling supported (Bot Framework restriction)_
+
 ### DIRECTLINE3_POLLINGINTERVAL
 _in milliseconds_
 HTTP Polling interval
@@ -113,3 +115,22 @@ _Default: false_
 Botium simulates conversations with username _me_. Depending on your implementation, running multiple conversations with the same username could make them fail (for example, session handling).
 
 Setting this capability to _true_ will generate a new username (uuid) for each conversation.
+
+### DIRECTLINE3_HANDLE_ACTIVITY_TYPES
+_Default: "message"_
+
+Activity types to handle (either JSON array or comma separated list). All other activity types will be ignored.
+
+Example: set to "message,event" (or [ "message", "event" ]) to also handle Bot Framework event activities with Botium
+
+### DIRECTLINE3_ACTIVITY_VALUE_MAP
+_default: { 'event': 'name' }_
+
+When using activity types other than _message_, this capability maps the activity type to the activity attribute to use as message text for Botium.
+
+By default, for _event_ activities the _name_ attribute is used as message text, for other activity types the activity type itself.
+
+# Current Restrictions
+
+* Only HTTP Polling supported (WebSocket not available in Node.js)
+* Typing indicator is not transmitted over HTTP Polling (Bot Framework restriction)

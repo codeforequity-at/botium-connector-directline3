@@ -11,6 +11,12 @@ const path = require('path')
 
 global.XMLHttpRequest = require('xhr2')
 
+if (debug.enabled) {
+  global.window = Object.assign(global.window || {}, { botchatDebug: true })
+} else {
+  global.window = Object.assign(global.window || {}, { botchatDebug: false })
+}
+
 const Capabilities = {
   DIRECTLINE3_SECRET: 'DIRECTLINE3_SECRET',
   DIRECTLINE3_WEBSOCKET: 'DIRECTLINE3_WEBSOCKET',
@@ -18,7 +24,9 @@ const Capabilities = {
   DIRECTLINE3_POLLINGINTERVAL: 'DIRECTLINE3_POLLINGINTERVAL',
   DIRECTLINE3_GENERATE_USERNAME: 'DIRECTLINE3_GENERATE_USERNAME',
   DIRECTLINE3_BUTTON_TYPE: 'DIRECTLINE3_BUTTON_TYPE',
-  DIRECTLINE3_BUTTON_VALUE_FIELD: 'DIRECTLINE3_BUTTON_VALUE_FIELD'
+  DIRECTLINE3_BUTTON_VALUE_FIELD: 'DIRECTLINE3_BUTTON_VALUE_FIELD',
+  DIRECTLINE3_HANDLE_ACTIVITY_TYPES: 'DIRECTLINE3_HANDLE_ACTIVITY_TYPES',
+  DIRECTLINE3_ACTIVITY_VALUE_MAP: 'DIRECTLINE3_ACTIVITY_VALUE_MAP'
 }
 
 const Defaults = {
@@ -26,7 +34,11 @@ const Defaults = {
   [Capabilities.DIRECTLINE3_POLLINGINTERVAL]: 1000,
   [Capabilities.DIRECTLINE3_GENERATE_USERNAME]: false,
   [Capabilities.DIRECTLINE3_BUTTON_TYPE]: 'event',
-  [Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]: 'name'
+  [Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]: 'name',
+  [Capabilities.DIRECTLINE3_HANDLE_ACTIVITY_TYPES]: 'message',
+  [Capabilities.DIRECTLINE3_ACTIVITY_VALUE_MAP]: {
+    'event': 'name'
+  }
 }
 
 class BotiumConnectorDirectline3 {
@@ -37,11 +49,13 @@ class BotiumConnectorDirectline3 {
 
   Validate () {
     debug('Validate called')
-    this.caps = Object.assign({}, Defaults, this.caps)
+
+    this.caps = Object.assign({}, Defaults, _.pickBy(this.caps, (value, key) => !Defaults.hasOwnProperty(key) || !_.isString(value) || value !== ''))
 
     if (!this.caps['DIRECTLINE3_SECRET']) throw new Error('DIRECTLINE3_SECRET capability required')
     if (!this.caps['DIRECTLINE3_BUTTON_TYPE']) throw new Error('DIRECTLINE3_BUTTON_TYPE capability required')
     if (!this.caps['DIRECTLINE3_BUTTON_VALUE_FIELD']) throw new Error('DIRECTLINE3_BUTTON_VALUE_FIELD capability required')
+    if (!this.caps['DIRECTLINE3_HANDLE_ACTIVITY_TYPES']) throw new Error('DIRECTLINE3_HANDLE_ACTIVITY_TYPES capability required')
 
     return Promise.resolve()
   }
@@ -67,9 +81,20 @@ class BotiumConnectorDirectline3 {
       this.me = 'me'
     }
 
+    const isValidActivityType = (activityType) => {
+      const filter = this.caps['DIRECTLINE3_HANDLE_ACTIVITY_TYPES']
+      if (_.isString(filter)) {
+        return filter.indexOf(activityType) >= 0
+      } else if (_.isArray(filter)) {
+        return filter.findIndex(f => f === activityType) >= 0
+      } else {
+        return false
+      }
+    }
+
     this.receivedMessageIds = {}
     this.subscription = this.directLine.activity$
-      .filter(activity => activity.type === 'message' && activity.from.id !== this.me)
+      .filter(activity => isValidActivityType(activity.type) && activity.from.id !== this.me)
       .subscribe(
         message => {
           if (this.receivedMessageIds[message.id]) {
@@ -78,88 +103,109 @@ class BotiumConnectorDirectline3 {
             debug('received message ', JSON.stringify(message, null, 2))
             this.receivedMessageIds[message.id] = true
             const botMsg = { sender: 'bot', sourceData: message, media: [], buttons: [], cards: [] }
-            botMsg.messageText = message.text || null
 
-            const mapButton = (b) => ({
-              text: b.title || b.text,
-              payload: b.value || b.url || b.data,
-              imageUri: b.image || b.iconUrl
-            })
-            const mapImage = (i) => ({
-              mediaUri: i.url,
-              mimeType: mime.lookup(i.url) || 'application/unknown',
-              altText: i.alt || i.altText
-            })
-            const mapMedia = (m) => ({
-              mediaUri: m.url,
-              mimeType: mime.lookup(m.url) || 'application/unknown',
-              altText: m.profile
-            })
+            if (message.type === 'message') {
+              botMsg.messageText = message.text || null
 
-            message.attachments && message.attachments.forEach(a => {
-              if (a.contentType === 'application/vnd.microsoft.card.hero') {
-                botMsg.cards.push({
-                  text: a.content.title || a.content.text,
-                  subtext: a.content.subtitle,
-                  content: a.content.text,
-                  image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
-                  buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                  media: a.content.images && a.content.images.map(mapImage)
-                })
-              } else if (a.contentType === 'application/vnd.microsoft.card.adaptive') {
-                const textBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type === 'TextBlock')
-                const imageBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type === 'Image')
+              const mapButton = (b) => ({
+                text: b.title || b.text,
+                payload: b.value || b.url || b.data,
+                imageUri: b.image || b.iconUrl
+              })
+              const mapImage = (i) => ({
+                mediaUri: i.url,
+                mimeType: mime.lookup(i.url) || 'application/unknown',
+                altText: i.alt || i.altText
+              })
+              const mapMedia = (m) => ({
+                mediaUri: m.url,
+                mimeType: mime.lookup(m.url) || 'application/unknown',
+                altText: m.profile
+              })
 
-                botMsg.cards.push({
-                  text: textBlocks && textBlocks.map(t => t.text),
-                  image: imageBlocks && imageBlocks.length > 0 && mapImage(imageBlocks[0]),
-                  buttons: a.content.actions && a.content.actions.map(mapButton)
-                })
-              } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
-                a.contentType === 'application/vnd.microsoft.card.audio' ||
-                a.contentType === 'application/vnd.microsoft.card.video') {
-                botMsg.cards.push({
-                  text: a.content.title || a.content.text,
-                  subtext: a.content.subtitle,
-                  content: a.content.text,
-                  image: a.content.image && mapImage(a.content.image),
-                  buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                  media: a.content.media && a.content.media.map(mapMedia)
-                })
-              } else if (a.contentType === 'application/vnd.microsoft.card.thumbnail') {
-                botMsg.cards.push({
-                  text: a.content.title || a.content.text,
-                  subtext: a.content.subtitle,
-                  content: a.content.text,
-                  image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
-                  buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                  media: a.content.images && a.content.images.map(mapImage)
-                })
-              } else if (a.contentType && a.contentUrl) {
-                botMsg.media.push({
-                  mediaUri: a.contentUrl,
-                  mimeType: a.contentType,
-                  altText: a.name
-                })
+              message.attachments && message.attachments.forEach(a => {
+                if (a.contentType === 'application/vnd.microsoft.card.hero') {
+                  botMsg.cards.push({
+                    text: a.content.title || a.content.text,
+                    subtext: a.content.subtitle,
+                    content: a.content.text,
+                    image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
+                    buttons: a.content.buttons && a.content.buttons.map(mapButton),
+                    media: a.content.images && a.content.images.map(mapImage)
+                  })
+                } else if (a.contentType === 'application/vnd.microsoft.card.adaptive') {
+                  const textBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type === 'TextBlock')
+                  const imageBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type === 'Image')
+
+                  botMsg.cards.push({
+                    text: textBlocks && textBlocks.map(t => t.text),
+                    image: imageBlocks && imageBlocks.length > 0 && mapImage(imageBlocks[0]),
+                    buttons: a.content.actions && a.content.actions.map(mapButton)
+                  })
+                } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
+                  a.contentType === 'application/vnd.microsoft.card.audio' ||
+                  a.contentType === 'application/vnd.microsoft.card.video') {
+                  botMsg.cards.push({
+                    text: a.content.title || a.content.text,
+                    subtext: a.content.subtitle,
+                    content: a.content.text,
+                    image: a.content.image && mapImage(a.content.image),
+                    buttons: a.content.buttons && a.content.buttons.map(mapButton),
+                    media: a.content.media && a.content.media.map(mapMedia)
+                  })
+                } else if (a.contentType === 'application/vnd.microsoft.card.thumbnail') {
+                  botMsg.cards.push({
+                    text: a.content.title || a.content.text,
+                    subtext: a.content.subtitle,
+                    content: a.content.text,
+                    image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
+                    buttons: a.content.buttons && a.content.buttons.map(mapButton),
+                    media: a.content.images && a.content.images.map(mapImage)
+                  })
+                } else if (a.contentType && a.contentUrl) {
+                  botMsg.media.push({
+                    mediaUri: a.contentUrl,
+                    mimeType: a.contentType,
+                    altText: a.name
+                  })
+                } else if (a.content && a.content.buttons && a.content.buttons.length > 0) {
+                  a.content.buttons.forEach(b => {
+                    botMsg.buttons.push(mapButton(b))
+                  })
+                }
+              })
+
+              message.suggestedActions && message.suggestedActions.actions && message.suggestedActions.actions.forEach(a => {
+                botMsg.buttons.push(mapButton(a))
+              })
+
+              if (message.entities && message.entities.length > 0) {
+                botMsg.entities = message.entities.map(e => ({
+                  name: e.name,
+                  value: e.value
+                }))
               }
-            })
 
-            message.suggestedActions && message.suggestedActions.actions && message.suggestedActions.actions.forEach(a => {
-              botMsg.buttons.push(mapButton(a))
-            })
-
-            if (!botMsg.messageText && botMsg.cards) {
-              const card = botMsg.cards.find(c => c.text)
-              if (card && _.isArray(card.text) && card.text.length > 0) {
-                botMsg.messageText = card.text[0]
-              } else if (card && _.isString(card.text)) {
-                botMsg.messageText = card.text
+              if (!botMsg.messageText && botMsg.cards) {
+                const card = botMsg.cards.find(c => c.text)
+                if (card && _.isArray(card.text) && card.text.length > 0) {
+                  botMsg.messageText = card.text[0]
+                } else if (card && _.isString(card.text)) {
+                  botMsg.messageText = card.text
+                }
               }
-            }
-            if (!botMsg.messageText && botMsg.buttons) {
-              const button = botMsg.buttons.find(b => b.text)
-              if (button) {
-                botMsg.messageText = button.text
+              if (!botMsg.messageText && botMsg.buttons) {
+                const button = botMsg.buttons.find(b => b.text)
+                if (button) {
+                  botMsg.messageText = button.text
+                }
+              }
+            } else {
+              const valueMap = this.caps['DIRECTLINE3_ACTIVITY_VALUE_MAP']
+              if (valueMap && valueMap[message.type]) {
+                botMsg.messageText = message[valueMap[message.type]]
+              } else {
+                botMsg.messageText = message.type
               }
             }
 
