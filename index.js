@@ -243,9 +243,7 @@ class BotiumConnectorDirectline3 {
   UserSays (msg) {
     debug('UserSays called')
     return new Promise(async (resolve, reject) => {
-      const activity = {
-        from: { id: this.me }
-      }
+      const activity = msg.sourceData || {}
       if (msg.buttons && msg.buttons.length > 0 && (msg.buttons[0].text || msg.buttons[0].payload)) {
         let payload = msg.buttons[0].payload || msg.buttons[0].text
         try {
@@ -255,12 +253,15 @@ class BotiumConnectorDirectline3 {
         activity.type = this.caps[Capabilities.DIRECTLINE3_BUTTON_TYPE]
         activity[this.caps[Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]] = payload
       } else {
-        if (msg.sourceData && msg.sourceData.type) {
-          activity.type = msg.sourceData.type
-        } else {
+        if (!activity.type) {
           activity.type = 'message'
         }
         activity.text = msg.messageText
+      }
+      if (!activity.from) {
+        activity.from = { id: this.me }
+      } else if (!activity.from.id) {
+        activity.from.id = this.me
       }
 
       if (msg.forms) {
