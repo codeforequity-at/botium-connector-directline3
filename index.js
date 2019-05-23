@@ -136,11 +136,12 @@ class BotiumConnectorDirectline3 {
                 } else if (a.contentType === 'application/vnd.microsoft.card.adaptive') {
                   const textBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type === 'TextBlock')
                   const imageBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type === 'Image')
+                  const buttonBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type.startsWith('Action.'))
 
                   botMsg.cards.push({
                     text: textBlocks && textBlocks.map(t => t.text),
                     image: imageBlocks && imageBlocks.length > 0 && mapImage(imageBlocks[0]),
-                    buttons: a.content.actions && a.content.actions.map(mapButton)
+                    buttons: ((a.content.actions && a.content.actions.map(mapButton)) || []).concat((buttonBlocks && buttonBlocks.map(mapButton)) || [])
                   })
                 } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
                   a.contentType === 'application/vnd.microsoft.card.audio' ||
@@ -243,9 +244,7 @@ class BotiumConnectorDirectline3 {
   UserSays (msg) {
     debug('UserSays called')
     return new Promise(async (resolve, reject) => {
-      const activity = {
-        from: { id: this.me }
-      }
+      const activity = msg.sourceData || {}
       if (msg.buttons && msg.buttons.length > 0 && (msg.buttons[0].text || msg.buttons[0].payload)) {
         let payload = msg.buttons[0].payload || msg.buttons[0].text
         try {
@@ -255,12 +254,15 @@ class BotiumConnectorDirectline3 {
         activity.type = this.caps[Capabilities.DIRECTLINE3_BUTTON_TYPE]
         activity[this.caps[Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]] = payload
       } else {
-        if (msg.sourceData && msg.sourceData.type) {
-          activity.type = msg.sourceData.type
-        } else {
+        if (!activity.type) {
           activity.type = 'message'
         }
         activity.text = msg.messageText
+      }
+      if (!activity.from) {
+        activity.from = { id: this.me }
+      } else if (!activity.from.id) {
+        activity.from.id = this.me
       }
 
       if (msg.forms) {
