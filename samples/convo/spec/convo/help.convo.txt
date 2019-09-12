@@ -4,7 +4,4 @@ help
 help
 
 #bot
-Welcome to Mockbot v4!
-
-#bot
 BUTTONS Show Markdown using Adaptive Card

@@ -4,9 +4,6 @@ event
 sample:backchannel
 
 #bot
-Welcome to Mockbot v4!
-
-#bot
 I am sending an `event` activity like below
 
 #bot

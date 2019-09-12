@@ -4,7 +4,4 @@ adaptive
 BUTTON card bingsports
 
 #bot
-Welcome to Mockbot v4!
-
-#bot
 BUTTONS Image action|Column action|Container action
