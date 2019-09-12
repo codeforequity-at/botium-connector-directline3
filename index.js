@@ -370,6 +370,11 @@ class BotiumConnectorDirectline3 {
       this.connSubscription.unsubscribe()
       this.connSubscription = null
     }
+    if (this.directLine) {
+      debug('ending directline connection')
+      this.directLine.end()
+      this.directLine = null
+    }
   }
 
   _deepFilter (item, selectFn, filterFn) {
