@@ -1,4 +1,3 @@
-const util = require('util')
 const uuidv4 = require('uuid/v4')
 const mime = require('mime-types')
 const _ = require('lodash')
@@ -318,17 +317,17 @@ class BotiumConnectorDirectline3 {
             'Content-Type': 'multipart/form-data'
           },
           body: formData
-        }).catch(err => {
-          debug('Error posting activity with attachments', err)
-          reject(new Error(`Error posting activity: ${err}`))
         }).then(async (res) => {
           const json = await res.json()
-          if (json.id) {
+          if (json && json.id) {
             debug('Posted activity with attachments, assigned ID:', json.id)
             resolve()
           } else {
-            reject(new Error(`Error posting activity with attachments: ${util.inspect(json)}`))
+            reject(new Error('Error posting activity with attachments, no activity id returned'))
           }
+        }).catch(err => {
+          debug('Error posting activity with attachments', err)
+          reject(new Error(`Error posting activity: ${err.message}`))
         })
       } else {
         debug('Posting activity ', JSON.stringify(activity, null, 2))
