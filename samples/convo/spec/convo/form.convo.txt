@@ -4,9 +4,6 @@ form
 BUTTON card inputs
 
 #bot
-Welcome to Mockbot v4!
-
-#bot
 BUTTONS Open Url|Submit|Show Card
 
 #me

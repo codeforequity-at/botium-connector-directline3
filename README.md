@@ -76,6 +76,19 @@ To check the configuration, run the emulator (Botium CLI required) to bring up a
 
 Botium setup is ready, you can begin to write your [BotiumScript](https://github.com/codeforequity-at/botium-core/wiki/Botium-Scripting) files.
 
+## Finetuning Directline3 Activity
+
+For finetuning the [Activity object](https://docs.microsoft.com/en-us/azure/bot-service/rest-api/bot-framework-rest-connector-api-reference?view=azure-bot-service-4.0#activity-object) sent to your bot, you can use the [UPDATE_CUSTOM logic hook](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/48660497/Integrated+Logic+Hooks). This example will add some custom values to the [channelData](https://docs.microsoft.com/en-us/azure/bot-service/rest-api/bot-framework-rest-connector-channeldata?view=azure-bot-service-4.0):
+
+    #me
+    do some channel specific thingy ...
+    UPDATE_CUSTOM SET_ACTIVITY_VALUE|channelData|{"channelData1": "botium", "channelData2": "something else"}
+
+The parameters are:
+1. SET_ACTIVITY_VALUE
+2. The path to the activity field
+3. The value of the activity field
+
 ## Supported Capabilities
 
 Set the capability __CONTAINERMODE__ to __directline3__ to activate this connector.

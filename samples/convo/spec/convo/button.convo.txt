@@ -4,7 +4,4 @@ button
 BUTTON card markdown
 
 #bot
-Welcome to Mockbot v4!
-
-#bot
 Showing  markdown
