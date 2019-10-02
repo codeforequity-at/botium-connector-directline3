@@ -4,13 +4,10 @@ imageupload
 upload
 
 #bot
-Welcome to Mockbot v4!
-
-#bot
 You have uploaded no files.
 
 #me
-upload
 MEDIA https://www.botium.at/images/logo.png
 
 #bot
+You have uploaded:

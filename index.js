@@ -37,7 +37,7 @@ const Defaults = {
   [Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]: 'name',
   [Capabilities.DIRECTLINE3_HANDLE_ACTIVITY_TYPES]: 'message',
   [Capabilities.DIRECTLINE3_ACTIVITY_VALUE_MAP]: {
-    'event': 'name'
+    event: 'name'
   }
 }
 
@@ -50,12 +50,12 @@ class BotiumConnectorDirectline3 {
   Validate () {
     debug('Validate called')
 
-    this.caps = Object.assign({}, Defaults, _.pickBy(this.caps, (value, key) => !Defaults.hasOwnProperty(key) || !_.isString(value) || value !== ''))
+    this.caps = Object.assign({}, Defaults, _.pickBy(this.caps, (value, key) => !Object.prototype.hasOwnProperty.call(Defaults, key) || !_.isString(value) || value !== ''))
 
-    if (!this.caps['DIRECTLINE3_SECRET']) throw new Error('DIRECTLINE3_SECRET capability required')
-    if (!this.caps['DIRECTLINE3_BUTTON_TYPE']) throw new Error('DIRECTLINE3_BUTTON_TYPE capability required')
-    if (!this.caps['DIRECTLINE3_BUTTON_VALUE_FIELD']) throw new Error('DIRECTLINE3_BUTTON_VALUE_FIELD capability required')
-    if (!this.caps['DIRECTLINE3_HANDLE_ACTIVITY_TYPES']) throw new Error('DIRECTLINE3_HANDLE_ACTIVITY_TYPES capability required')
+    if (!this.caps.DIRECTLINE3_SECRET) throw new Error('DIRECTLINE3_SECRET capability required')
+    if (!this.caps.DIRECTLINE3_BUTTON_TYPE) throw new Error('DIRECTLINE3_BUTTON_TYPE capability required')
+    if (!this.caps.DIRECTLINE3_BUTTON_VALUE_FIELD) throw new Error('DIRECTLINE3_BUTTON_VALUE_FIELD capability required')
+    if (!this.caps.DIRECTLINE3_HANDLE_ACTIVITY_TYPES) throw new Error('DIRECTLINE3_HANDLE_ACTIVITY_TYPES capability required')
 
     return Promise.resolve()
   }
@@ -69,20 +69,20 @@ class BotiumConnectorDirectline3 {
     debug('Start called')
     this._stopSubscription()
     this.directLine = new DirectLine({
-      secret: this.caps['DIRECTLINE3_SECRET'],
-      webSocket: this.caps['DIRECTLINE3_WEBSOCKET'],
-      domain: this.caps['DIRECTLINE3_DOMAIN'],
-      pollingInterval: this.caps['DIRECTLINE3_POLLINGINTERVAL']
+      secret: this.caps.DIRECTLINE3_SECRET,
+      webSocket: this.caps.DIRECTLINE3_WEBSOCKET,
+      domain: this.caps.DIRECTLINE3_DOMAIN,
+      pollingInterval: this.caps.DIRECTLINE3_POLLINGINTERVAL
     })
 
-    if (this.caps['DIRECTLINE3_GENERATE_USERNAME']) {
+    if (this.caps.DIRECTLINE3_GENERATE_USERNAME) {
       this.me = uuidv4()
     } else {
       this.me = 'me'
     }
 
     const isValidActivityType = (activityType) => {
-      const filter = this.caps['DIRECTLINE3_HANDLE_ACTIVITY_TYPES']
+      const filter = this.caps.DIRECTLINE3_HANDLE_ACTIVITY_TYPES
       if (_.isString(filter)) {
         return filter.indexOf(activityType) >= 0
       } else if (_.isArray(filter)) {
@@ -202,7 +202,7 @@ class BotiumConnectorDirectline3 {
                 }
               }
             } else {
-              const valueMap = this.caps['DIRECTLINE3_ACTIVITY_VALUE_MAP']
+              const valueMap = this.caps.DIRECTLINE3_ACTIVITY_VALUE_MAP
               if (valueMap && valueMap[message.type]) {
                 botMsg.messageText = message[valueMap[message.type]]
               } else {
@@ -243,7 +243,7 @@ class BotiumConnectorDirectline3 {
 
   UserSays (msg) {
     debug('UserSays called')
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve, reject) => { // eslint-disable-line no-async-promise-executor
       const activity = msg.sourceData || {}
       if (msg.buttons && msg.buttons.length > 0 && (msg.buttons[0].text || msg.buttons[0].payload)) {
         let payload = msg.buttons[0].payload || msg.buttons[0].text
@@ -272,14 +272,22 @@ class BotiumConnectorDirectline3 {
         })
       }
 
+      if (msg.SET_ACTIVITY_VALUE) {
+        _.keys(msg.SET_ACTIVITY_VALUE).forEach(key => {
+          _.set(activity, key, msg.SET_ACTIVITY_VALUE[key])
+        })
+      }
+
       if (msg.media && msg.media.length > 0) {
         debug('Posting activity with attachments ', JSON.stringify(activity, null, 2))
         const formData = new FormData()
 
-        formData.append('activity', Buffer.from(JSON.stringify(activity)), {
-          contentType: 'application/vnd.microsoft.activity',
-          filename: 'blob'
-        })
+        if (activity.text) {
+          formData.append('activity', Buffer.from(JSON.stringify(activity)), {
+            contentType: 'application/vnd.microsoft.activity',
+            filename: 'blob'
+          })
+        }
 
         for (let i = 0; i < msg.media.length; i++) {
           const attachment = msg.media[i]
@@ -294,17 +302,20 @@ class BotiumConnectorDirectline3 {
             const { body } = await fetch(attachment.mediaUri)
 
             formData.append('file', body, {
-              filename: attachmentName
+              filename: attachmentName,
+              contentType: 'image/png'
             })
           }
         }
 
-        // Ensure directline is connected!
         await this.directLine.checkConnection(true)
-        fetch(`${this.directLine.domain}/conversations/${this.directLine.conversationId}/upload?userId=${activity.from.id}`, {
+        const uploadUrl = `${this.directLine.domain}/conversations/${this.directLine.conversationId}/upload?userId=${activity.from.id}`
+        debug(`Uploading attachments to ${uploadUrl}`)
+        fetch(uploadUrl, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${this.directLine.token}`
+            Authorization: `Bearer ${this.directLine.token}`,
+            'Content-Type': 'multipart/form-data'
           },
           body: formData
         }).catch(err => {
@@ -358,6 +369,11 @@ class BotiumConnectorDirectline3 {
       debug('unsubscribing from directline connectionstatus subscription')
       this.connSubscription.unsubscribe()
       this.connSubscription = null
+    }
+    if (this.directLine) {
+      debug('ending directline connection')
+      this.directLine.end()
+      this.directLine = null
     }
   }
 

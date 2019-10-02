@@ -1,0 +1,9 @@
+channeldata
+
+#me
+channel-data
+UPDATE_CUSTOM SET_ACTIVITY_VALUE|channelData|{"channelData1": "botium", "channelData2": "something else"}
+
+#bot
+Dump of the channel data from the activity sent by the user.
+JSON_PATH $.attachments
