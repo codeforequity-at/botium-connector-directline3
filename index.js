@@ -298,11 +298,11 @@ class BotiumConnectorDirectline3 {
               filename: attachmentName
             })
           } else {
-            const { body } = await fetch(attachment.mediaUri)
+            const res = await fetch(attachment.mediaUri)
+            const body = await res.buffer()
 
             formData.append('file', body, {
-              filename: attachmentName,
-              contentType: 'image/png'
+              filename: attachmentName
             })
           }
         }
@@ -313,8 +313,7 @@ class BotiumConnectorDirectline3 {
         fetch(uploadUrl, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${this.directLine.token}`,
-            'Content-Type': 'multipart/form-data'
+            Authorization: `Bearer ${this.directLine.token}`
           },
           body: formData
         }).then(async (res) => {
