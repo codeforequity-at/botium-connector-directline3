@@ -1,8 +1,0 @@
-card
-
-#me
-BUTTON thumbnailcard
-
-#bot
-Microsoft Surface Pro
-MEDIA surface1.jpg

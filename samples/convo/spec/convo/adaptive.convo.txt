@@ -1,7 +1,0 @@
-adaptive
-
-#me
-BUTTON card bingsports
-
-#bot
-BUTTONS Image action|Column action|Container action
