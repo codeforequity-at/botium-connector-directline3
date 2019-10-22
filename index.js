@@ -251,7 +251,7 @@ class BotiumConnectorDirectline3 {
         } catch (err) {
         }
         activity.type = this.caps[Capabilities.DIRECTLINE3_BUTTON_TYPE]
-        activity[this.caps[Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]] = payload
+        _.set(activity, this.caps[Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD], payload)
       } else {
         if (!activity.type) {
           activity.type = 'message'
@@ -265,9 +265,9 @@ class BotiumConnectorDirectline3 {
       }
 
       if (msg.forms) {
-        activity.value = {}
+        activity.value = activity.value || {}
         msg.forms.forEach(f => {
-          activity.value[f.name] = f.value
+          _.set(activity.value, f.name, f.value)
         })
       }
 
