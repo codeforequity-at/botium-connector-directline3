@@ -25,7 +25,8 @@ const Capabilities = {
   DIRECTLINE3_BUTTON_TYPE: 'DIRECTLINE3_BUTTON_TYPE',
   DIRECTLINE3_BUTTON_VALUE_FIELD: 'DIRECTLINE3_BUTTON_VALUE_FIELD',
   DIRECTLINE3_HANDLE_ACTIVITY_TYPES: 'DIRECTLINE3_HANDLE_ACTIVITY_TYPES',
-  DIRECTLINE3_ACTIVITY_VALUE_MAP: 'DIRECTLINE3_ACTIVITY_VALUE_MAP'
+  DIRECTLINE3_ACTIVITY_VALUE_MAP: 'DIRECTLINE3_ACTIVITY_VALUE_MAP',
+  DIRECTLINE3_ACTIVITY_TEMPLATE: 'DIRECTLINE3_ACTIVITY_TEMPLATE'
 }
 
 const Defaults = {
@@ -55,6 +56,17 @@ class BotiumConnectorDirectline3 {
     if (!this.caps.DIRECTLINE3_BUTTON_TYPE) throw new Error('DIRECTLINE3_BUTTON_TYPE capability required')
     if (!this.caps.DIRECTLINE3_BUTTON_VALUE_FIELD) throw new Error('DIRECTLINE3_BUTTON_VALUE_FIELD capability required')
     if (!this.caps.DIRECTLINE3_HANDLE_ACTIVITY_TYPES) throw new Error('DIRECTLINE3_HANDLE_ACTIVITY_TYPES capability required')
+
+    if (this.caps.DIRECTLINE3_ACTIVITY_VALUE_MAP) {
+      if (_.isString(this.caps.DIRECTLINE3_ACTIVITY_VALUE_MAP)) {
+        this.caps.DIRECTLINE3_ACTIVITY_VALUE_MAP = JSON.parse(this.caps.DIRECTLINE3_ACTIVITY_VALUE_MAP)
+      }
+    }
+    if (this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE) {
+      if (_.isString(this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE)) {
+        this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE = JSON.parse(this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE)
+      }
+    }
 
     return Promise.resolve()
   }
@@ -243,7 +255,7 @@ class BotiumConnectorDirectline3 {
   UserSays (msg) {
     debug('UserSays called')
     return new Promise(async (resolve, reject) => { // eslint-disable-line no-async-promise-executor
-      const activity = msg.sourceData || {}
+      const activity = Object.assign({}, msg.sourceData || this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE || {})
       if (msg.buttons && msg.buttons.length > 0 && (msg.buttons[0].text || msg.buttons[0].payload)) {
         let payload = msg.buttons[0].payload || msg.buttons[0].text
         try {
@@ -279,6 +291,8 @@ class BotiumConnectorDirectline3 {
 
       if (msg.media && msg.media.length > 0) {
         debug('Posting activity with attachments ', JSON.stringify(activity, null, 2))
+        msg.sourceData = Object.assign(msg.sourceData || {}, { activity })
+
         const formData = new FormData()
 
         formData.append('activity', Buffer.from(JSON.stringify(activity)), {
@@ -324,10 +338,11 @@ class BotiumConnectorDirectline3 {
           }
         }).catch(err => {
           debug('Error posting activity with attachments', err)
-          reject(new Error(`Error posting activity: ${err.message}`))
+          reject(new Error(`Error posting activity: ${err.message || err}`))
         })
       } else {
         debug('Posting activity ', JSON.stringify(activity, null, 2))
+        msg.sourceData = Object.assign(msg.sourceData || {}, { activity })
 
         this.directLine.postActivity(activity).subscribe(
           id => {
@@ -336,7 +351,7 @@ class BotiumConnectorDirectline3 {
           },
           err => {
             debug('Error posting activity', err)
-            reject(new Error(`Error posting activity: ${err}`))
+            reject(new Error(`Error posting activity: ${err.message || err}`))
           }
         )
       }

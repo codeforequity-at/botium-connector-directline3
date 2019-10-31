@@ -6,7 +6,12 @@
       "DIRECTLINE3_SECRET": "my-directline-secret",
       "DIRECTLINE3_BUTTON_TYPE": "message",
       "DIRECTLINE3_BUTTON_VALUE_FIELD": "text",
-      "DIRECTLINE3_HANDLE_ACTIVITY_TYPES": "message,event"
+      "DIRECTLINE3_HANDLE_ACTIVITY_TYPES": "message,event",
+      "DIRECTLINE3_ACTIVITY_TEMPLATE": {
+        "channelData": {
+          "my-special-channel-data": "..."
+        }
+      }
     }
   }
 }

@@ -89,6 +89,19 @@ The parameters are:
 2. The path to the activity field
 3. The value of the activity field
 
+Another option for having full control over the activity is to use the **DIRECTLINE3_ACTIVITY_TEMPLATE** capability. It is a JSON structure used as a template when sending an activity to the bot.
+
+```
+    ...
+    "DIRECTLINE3_ACTIVITY_TEMPLATE": {
+      "channelData": {
+        "my-special-channel-data": "..."
+      }
+    }
+    ...
+```
+
+
 ## Supported Capabilities
 
 Set the capability __CONTAINERMODE__ to __directline3__ to activate this connector.
@@ -142,6 +155,11 @@ _default: { 'event': 'name' }_
 When using activity types other than _message_, this capability maps the activity type to the activity attribute to use as message text for Botium.
 
 By default, for _event_ activities the _name_ attribute is used as message text, for other activity types the activity type itself.
+
+### DIRECTLINE3_ACTIVITY_TEMPLATE
+_default: {}_
+
+JSON object holding the activity template used for sending activities to the bot.
 
 # Current Restrictions
 
