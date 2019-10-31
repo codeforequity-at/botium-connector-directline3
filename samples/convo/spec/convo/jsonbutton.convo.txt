@@ -1,7 +1,0 @@
-jsonbutton
-
-#me
-BUTTON {"hello": "World!"}
-
-#bot
-You posted
