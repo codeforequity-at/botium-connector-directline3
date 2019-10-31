@@ -281,12 +281,10 @@ class BotiumConnectorDirectline3 {
         debug('Posting activity with attachments ', JSON.stringify(activity, null, 2))
         const formData = new FormData()
 
-        if (activity.text) {
-          formData.append('activity', Buffer.from(JSON.stringify(activity)), {
-            contentType: 'application/vnd.microsoft.activity',
-            filename: 'blob'
-          })
-        }
+        formData.append('activity', Buffer.from(JSON.stringify(activity)), {
+          contentType: 'application/vnd.microsoft.activity',
+          filename: 'blob'
+        })
 
         for (let i = 0; i < msg.media.length; i++) {
           const attachment = msg.media[i]
@@ -298,11 +296,11 @@ class BotiumConnectorDirectline3 {
               filename: attachmentName
             })
           } else {
-            const { body } = await fetch(attachment.mediaUri)
+            const res = await fetch(attachment.mediaUri)
+            const body = await res.buffer()
 
             formData.append('file', body, {
-              filename: attachmentName,
-              contentType: 'image/png'
+              filename: attachmentName
             })
           }
         }
@@ -313,8 +311,7 @@ class BotiumConnectorDirectline3 {
         fetch(uploadUrl, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${this.directLine.token}`,
-            'Content-Type': 'multipart/form-data'
+            Authorization: `Bearer ${this.directLine.token}`
           },
           body: formData
         }).then(async (res) => {

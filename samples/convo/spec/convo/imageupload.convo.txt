@@ -1,13 +1,13 @@
-imageupload
+login with custom hook
 
 #me
-upload
+Hi
 
 #bot
-You have uploaded no files.
+I heard you say:
 
 #me
 MEDIA https://www.botium.at/images/logo.png
 
 #bot
-You have uploaded:
+with 1 attachments
