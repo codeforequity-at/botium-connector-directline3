@@ -142,7 +142,8 @@ class BotiumConnectorDirectline3 {
                     content: a.content.text,
                     image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
                     buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                    media: a.content.images && a.content.images.map(mapImage)
+                    media: a.content.images && a.content.images.map(mapImage),
+                    sourceData: a
                   })
                 } else if (a.contentType === 'application/vnd.microsoft.card.adaptive') {
                   const textBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type === 'TextBlock')
@@ -152,7 +153,8 @@ class BotiumConnectorDirectline3 {
                   botMsg.cards.push({
                     text: textBlocks && textBlocks.map(t => t.text),
                     image: imageBlocks && imageBlocks.length > 0 && mapImage(imageBlocks[0]),
-                    buttons: ((a.content.actions && a.content.actions.map(mapButton)) || []).concat((buttonBlocks && buttonBlocks.map(mapButton)) || [])
+                    buttons: ((a.content.actions && a.content.actions.map(mapButton)) || []).concat((buttonBlocks && buttonBlocks.map(mapButton)) || []),
+                    sourceData: a
                   })
                 } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
                   a.contentType === 'application/vnd.microsoft.card.audio' ||
@@ -163,7 +165,8 @@ class BotiumConnectorDirectline3 {
                     content: a.content.text,
                     image: a.content.image && mapImage(a.content.image),
                     buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                    media: a.content.media && a.content.media.map(mapMedia)
+                    media: a.content.media && a.content.media.map(mapMedia),
+                    sourceData: a
                   })
                 } else if (a.contentType === 'application/vnd.microsoft.card.thumbnail') {
                   botMsg.cards.push({
@@ -172,7 +175,8 @@ class BotiumConnectorDirectline3 {
                     content: a.content.text,
                     image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
                     buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                    media: a.content.images && a.content.images.map(mapImage)
+                    media: a.content.images && a.content.images.map(mapImage),
+                    sourceData: a
                   })
                 } else if (a.contentType && a.contentUrl) {
                   botMsg.media.push({
