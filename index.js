@@ -113,7 +113,7 @@ class BotiumConnectorDirectline3 {
           } else {
             debug('received message ', JSON.stringify(message, null, 2))
             this.receivedMessageIds[message.id] = true
-            const botMsg = { sender: 'bot', sourceData: message, media: [], buttons: [], cards: [] }
+            const botMsg = { sender: 'bot', sourceData: message, media: [], buttons: [], cards: [], forms: [] }
 
             if (message.type === 'message') {
               botMsg.messageText = message.text || null
@@ -156,6 +156,15 @@ class BotiumConnectorDirectline3 {
                     buttons: ((a.content.actions && a.content.actions.map(mapButton)) || []).concat((buttonBlocks && buttonBlocks.map(mapButton)) || []),
                     sourceData: a
                   })
+                  const inputs = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type.startsWith('Input.'))
+                  for (const input of inputs) {
+                    botMsg.forms.push({
+                      name: input.id,
+                      label: input.label,
+                      type: input.type.substring('Input.'.length),
+                      options: input.choices
+                    })
+                  }
                 } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
                   a.contentType === 'application/vnd.microsoft.card.audio' ||
                   a.contentType === 'application/vnd.microsoft.card.video') {
