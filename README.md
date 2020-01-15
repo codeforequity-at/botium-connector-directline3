@@ -10,7 +10,7 @@ This is a [Botium](https://github.com/codeforequity-at/botium-core) connector fo
 
 __Did you read the [Botium in a Nutshell](https://medium.com/@floriantreml/botium-in-a-nutshell-part-1-overview-f8d0ceaf8fb4) articles ? Be warned, without prior knowledge of Botium you won't be able to properly use this library!__
 
-## How it works ?
+## How it works?
 The Direct Line API 3.0, part of the Microsoft Bot Framework, enables Botium to talk to a chatbot deployed and running with the Microsoft Bot Framework.
 
 The Direct Line version number does not correspond to the Microsoft Bot Framework version number. So this connector actually supports  __Microsoft Bot Framework v3 as well as v4__.
@@ -20,7 +20,10 @@ It can be used as any other Botium connector with all Botium Stack components:
 * [Botium Bindings](https://github.com/codeforequity-at/botium-bindings/)
 * [Botium Box](https://www.botium.at)
 
-This connector extracts form contents from adaptive cards. You can assert them with [Forms Asserter](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/48627713/Forms+Asserter).
+
+## Features
+* Button, Media, Card, Form extraction. Accordingly it is possible to use a corresponding [Botium Asserter](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/2293815/Botium+Asserters).
+* Adaptive Card support. 
 
 ## Requirements
 
