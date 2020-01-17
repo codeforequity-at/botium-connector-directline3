@@ -1,0 +1,18 @@
+form
+
+#me
+BUTTON card inputs
+
+#bot
+BUTTONS Open Url|Submit|Show Card
+
+#me
+FORM SimpleVal|myname
+FORM UrlVal|myhomepage
+FORM EmailVal|myemail
+FORM CompactSelectVal|2
+FORM MultiSelectVal|1;2
+FORM IsCool
+
+#bot
+You posted

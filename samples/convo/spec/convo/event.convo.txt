@@ -1,0 +1,10 @@
+event
+
+#me
+sample:backchannel
+
+#bot
+I am sending an `event` activity like below
+
+#bot
+sample:backchannel

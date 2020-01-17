@@ -113,7 +113,7 @@ class BotiumConnectorDirectline3 {
           } else {
             debug('received message ', JSON.stringify(message, null, 2))
             this.receivedMessageIds[message.id] = true
-            const botMsg = { sender: 'bot', sourceData: message, media: [], buttons: [], cards: [] }
+            const botMsg = { sender: 'bot', sourceData: message, media: [], buttons: [], cards: [], forms: [] }
 
             if (message.type === 'message') {
               botMsg.messageText = message.text || null
@@ -133,7 +133,31 @@ class BotiumConnectorDirectline3 {
                 mimeType: mime.lookup(m.url) || 'application/unknown',
                 altText: m.profile
               })
-
+              const mapAdaptiveCardRecursive = (c) => {
+                const textBlocks = this._deepFilter(c.body, (t) => t.type, (t) => t.type === 'TextBlock')
+                const imageBlocks = this._deepFilter(c.body, (t) => t.type, (t) => t.type === 'Image')
+                const buttonBlocks = this._deepFilter(c.body, (t) => t.type, (t) => t.type.startsWith('Action.'))
+                const actions = (c.actions || []).concat((buttonBlocks && buttonBlocks.map(mapButton)) || [])
+                const subcards = actions.filter(a => (a.type === 'Action.ShowCard' && a.card)).map(a => mapAdaptiveCardRecursive(a.card))
+                const inputs = this._deepFilter(c.body, (t) => t.type, (t) => t.type.startsWith('Input.'))
+                const forms = []
+                for (const input of inputs) {
+                  forms.push({
+                    name: input.id,
+                    label: input.label,
+                    type: input.type.substring('Input.'.length),
+                    options: input.choices
+                  })
+                }
+                return {
+                  text: textBlocks && textBlocks.map(t => t.text),
+                  image: imageBlocks && imageBlocks.length > 0 && mapImage(imageBlocks[0]),
+                  buttons: actions.map(mapButton),
+                  forms: forms.length ? forms : null,
+                  cards: subcards.length ? subcards : null,
+                  sourceData: c
+                }
+              }
               message.attachments && message.attachments.forEach(a => {
                 if (a.contentType === 'application/vnd.microsoft.card.hero') {
                   botMsg.cards.push({
@@ -142,18 +166,14 @@ class BotiumConnectorDirectline3 {
                     content: a.content.text,
                     image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
                     buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                    media: a.content.images && a.content.images.map(mapImage)
+                    media: a.content.images && a.content.images.map(mapImage),
+                    sourceData: a
                   })
                 } else if (a.contentType === 'application/vnd.microsoft.card.adaptive') {
-                  const textBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type === 'TextBlock')
-                  const imageBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type === 'Image')
-                  const buttonBlocks = this._deepFilter(a.content.body, (t) => t.type, (t) => t.type.startsWith('Action.'))
-
-                  botMsg.cards.push({
-                    text: textBlocks && textBlocks.map(t => t.text),
-                    image: imageBlocks && imageBlocks.length > 0 && mapImage(imageBlocks[0]),
-                    buttons: ((a.content.actions && a.content.actions.map(mapButton)) || []).concat((buttonBlocks && buttonBlocks.map(mapButton)) || [])
-                  })
+                  // if is send 'card inputs please' instead of 'card inputs' then there is an empty card in attachments
+                  if (a.content) {
+                    botMsg.cards.push(mapAdaptiveCardRecursive(a.content))
+                  }
                 } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
                   a.contentType === 'application/vnd.microsoft.card.audio' ||
                   a.contentType === 'application/vnd.microsoft.card.video') {
@@ -163,7 +183,8 @@ class BotiumConnectorDirectline3 {
                     content: a.content.text,
                     image: a.content.image && mapImage(a.content.image),
                     buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                    media: a.content.media && a.content.media.map(mapMedia)
+                    media: a.content.media && a.content.media.map(mapMedia),
+                    sourceData: a
                   })
                 } else if (a.contentType === 'application/vnd.microsoft.card.thumbnail') {
                   botMsg.cards.push({
@@ -172,7 +193,8 @@ class BotiumConnectorDirectline3 {
                     content: a.content.text,
                     image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
                     buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                    media: a.content.images && a.content.images.map(mapImage)
+                    media: a.content.images && a.content.images.map(mapImage),
+                    sourceData: a
                   })
                 } else if (a.contentType && a.contentUrl) {
                   botMsg.media.push({
