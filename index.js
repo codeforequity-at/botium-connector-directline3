@@ -170,7 +170,10 @@ class BotiumConnectorDirectline3 {
                     sourceData: a
                   })
                 } else if (a.contentType === 'application/vnd.microsoft.card.adaptive') {
-                  botMsg.cards.push(mapAdaptiveCardRecursive(a.content))
+                  // if is send 'card inputs please' instead of 'card inputs' then there is an empty card in attachments
+                  if (a.content) {
+                    botMsg.cards.push(mapAdaptiveCardRecursive(a.content))
+                  }
                 } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
                   a.contentType === 'application/vnd.microsoft.card.audio' ||
                   a.contentType === 'application/vnd.microsoft.card.video') {
