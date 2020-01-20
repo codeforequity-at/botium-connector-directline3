@@ -20,6 +20,8 @@ It can be used as any other Botium connector with all Botium Stack components:
 * [Botium Bindings](https://github.com/codeforequity-at/botium-bindings/)
 * [Botium Box](https://www.botium.at)
 
+This connector extracts form contents from adaptive cards. You can assert them with [Forms Asserter](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/48627713/Forms+Asserter).
+
 ## Requirements
 
 * __Node.js and NPM__
