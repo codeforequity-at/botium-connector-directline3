@@ -153,6 +153,7 @@ class BotiumConnectorDirectline3 {
                   text: textBlocks && textBlocks.map(t => t.text),
                   image: imageBlocks && imageBlocks.length > 0 && mapImage(imageBlocks[0]),
                   buttons: actions.map(mapButton),
+                  media: imageBlocks && imageBlocks.length > 1 && imageBlocks.slice(1).map(mapImage),
                   forms: forms.length ? forms : null,
                   cards: subcards.length ? subcards : null,
                   sourceData: c
@@ -166,7 +167,7 @@ class BotiumConnectorDirectline3 {
                     content: a.content.text,
                     image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
                     buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                    media: a.content.images && a.content.images.map(mapImage),
+                    media: a.content.images && a.content.images.length > 1 && a.content.images.slice(1).map(mapImage),
                     sourceData: a
                   })
                 } else if (a.contentType === 'application/vnd.microsoft.card.adaptive') {
@@ -193,7 +194,7 @@ class BotiumConnectorDirectline3 {
                     content: a.content.text,
                     image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
                     buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                    media: a.content.images && a.content.images.map(mapImage),
+                    media: a.content.images && a.content.images.length > 1 && a.content.images.slice(1).map(mapImage),
                     sourceData: a
                   })
                 } else if (a.contentType && a.contentUrl) {
@@ -243,7 +244,8 @@ class BotiumConnectorDirectline3 {
               }
             }
 
-            setTimeout(() => this.queueBotSays(botMsg), 0)
+            // give userSays some time
+            setTimeout(() => this.queueBotSays(botMsg), 200)
           }
         }
       )
