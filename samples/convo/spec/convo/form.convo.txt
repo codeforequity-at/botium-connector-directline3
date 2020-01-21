@@ -5,6 +5,7 @@ BUTTON card inputs
 
 #bot
 BUTTONS Open Url|Submit|Show Card
+FORMS SimpleVal|UrlVal|EmailVal|...
 
 #me
 FORM SimpleVal|myname
