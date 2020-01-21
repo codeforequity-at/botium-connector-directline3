@@ -1,0 +1,10 @@
+subcards
+
+#me
+BUTTON card inputs
+
+#bot
+Showing inputs
+FORMS SimpleVal|UrlVal|EmailVal|CommentVal|..
+BUTTONS Submit|Show Card|Ok
+MEDIA https://www.bing.com/th?id=AR_3934aff63dd6ff941034090a4b9d12e1&w=50&h=50&dpr=2&pid=AppEx
