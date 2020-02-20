@@ -197,6 +197,23 @@ class BotiumConnectorDirectline3 {
                     media: a.content.images && a.content.images.length > 1 && a.content.images.slice(1).map(mapImage),
                     sourceData: a
                   })
+                } else if (a.contentType === 'text/markdown') {
+                  botMsg.cards.push({
+                    content: a.content,
+                    sourceData: {
+                      type: 'AdaptiveCard',
+                      body: [
+                        {
+                          type: 'TextBlock',
+                          text: a.content
+                        }
+                      ]
+                    }
+                  })
+                } else if (a.contentType === 'text/plain') {
+                  botMsg.cards.push({
+                    content: a.content
+                  })
                 } else if (a.contentType && a.contentUrl) {
                   botMsg.media.push({
                     mediaUri: a.contentUrl,
