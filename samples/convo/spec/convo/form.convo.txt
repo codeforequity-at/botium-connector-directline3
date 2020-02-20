@@ -14,6 +14,8 @@ FORM EmailVal|myemail
 FORM CompactSelectVal|2
 FORM MultiSelectVal|1;2
 FORM IsCool
+BUTTON Submit
 
 #bot
 You posted
+CARDS Submit|SimpleVal
