@@ -345,18 +345,24 @@ class BotiumConnectorDirectline3 {
           const attachment = msg.media[i]
           const attachmentName = path.basename(attachment.mediaUri)
 
-          if (attachment.mediaUri.startsWith('file://')) {
-            const filepath = attachment.mediaUri.split('file://')[1]
+          if (attachment.buffer) {
+            formData.append('file', attachment.buffer, {
+              filename: attachmentName
+            })
+          } else if (attachment.downloadUri && attachment.downloadUri.startsWith('file://')) {
+            const filepath = attachment.downloadUri.split('file://')[1]
             formData.append('file', fs.createReadStream(filepath), {
               filename: attachmentName
             })
-          } else {
-            const res = await fetch(attachment.mediaUri)
+          } else if (attachment.downloadUri) {
+            const res = await fetch(attachment.downloadUri)
             const body = await res.buffer()
 
             formData.append('file', body, {
               filename: attachmentName
             })
+          } else {
+            return reject(new Error(`Media attachment ${attachment.mediaUri} not downloaded`))
           }
         }
 
