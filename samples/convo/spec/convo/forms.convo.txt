@@ -4,4 +4,4 @@ forms
 BUTTON card inputs
 
 #bot
-FORMS SimpleVal|UrlVal|EmailVal|...
+FORMS SimpleVal|UrlVal|EmailVal
