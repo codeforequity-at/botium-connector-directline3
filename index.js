@@ -138,7 +138,7 @@ class BotiumConnectorDirectline3 {
                 const imageBlocks = this._deepFilter(c.body, (t) => t.type, (t) => t.type === 'Image')
                 const buttonBlocks = this._deepFilter(c.body, (t) => t.type, (t) => t.type.startsWith('Action.'))
                 const actions = (c.actions || []).concat((buttonBlocks && buttonBlocks.map(mapButton)) || [])
-                const subcards = actions.filter(a => (a.type === 'Action.ShowCard' && a.card)).map(a => mapAdaptiveCardRecursive(a.card))
+                const subcards = actions.filter(a => (a.type === 'Action.ShowCard' && a.card && a.card.body)).map(a => mapAdaptiveCardRecursive(a.card))
                 const inputs = this._deepFilter(c.body, (t) => t.type, (t) => t.type.startsWith('Input.'))
                 const forms = []
                 for (const input of inputs) {
@@ -445,9 +445,11 @@ class BotiumConnectorDirectline3 {
       if (filterFn(item)) {
         result.push(item)
       } else {
-        Object.getOwnPropertyNames(item).forEach(key => {
-          result = result.concat(this._deepFilter(item[key], selectFn, filterFn))
-        })
+        if (!item.type || item.type !== 'Action.ShowCard') {
+          Object.getOwnPropertyNames(item).forEach(key => {
+            result = result.concat(this._deepFilter(item[key], selectFn, filterFn))
+          })
+        }
       }
     }
     return result
