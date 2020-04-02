@@ -166,6 +166,11 @@ _default: {}_
 
 JSON object holding the activity template used for sending activities to the bot.
 
+### DIRECTLINE3_ACTIVITY_VALIDATION
+_default: 'error'
+
+Set to 'warning' if you want to suppress activity validation errors.
+
 # Current Restrictions
 
 * Only HTTP Polling supported (WebSocket not available in Node.js)
