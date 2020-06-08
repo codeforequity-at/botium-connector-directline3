@@ -19,7 +19,8 @@ const Capabilities = {
   DIRECTLINE3_BUTTON_VALUE_FIELD: 'DIRECTLINE3_BUTTON_VALUE_FIELD',
   DIRECTLINE3_HANDLE_ACTIVITY_TYPES: 'DIRECTLINE3_HANDLE_ACTIVITY_TYPES',
   DIRECTLINE3_ACTIVITY_VALUE_MAP: 'DIRECTLINE3_ACTIVITY_VALUE_MAP',
-  DIRECTLINE3_ACTIVITY_TEMPLATE: 'DIRECTLINE3_ACTIVITY_TEMPLATE'
+  DIRECTLINE3_ACTIVITY_TEMPLATE: 'DIRECTLINE3_ACTIVITY_TEMPLATE',
+  DIRECTLINE3_ACTIVITY_VALIDATION: 'DIRECTLINE3_ACTIVITY_VALIDATION'
 }
 
 const Defaults = {
@@ -29,6 +30,7 @@ const Defaults = {
   [Capabilities.DIRECTLINE3_BUTTON_TYPE]: 'event',
   [Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD]: 'name',
   [Capabilities.DIRECTLINE3_HANDLE_ACTIVITY_TYPES]: 'message',
+  [Capabilities.DIRECTLINE3_ACTIVITY_VALIDATION]: 'error',
   [Capabilities.DIRECTLINE3_ACTIVITY_VALUE_MAP]: {
     event: 'name'
   }
@@ -325,6 +327,18 @@ class BotiumConnectorDirectline3 {
         _.keys(msg.SET_ACTIVITY_VALUE).forEach(key => {
           _.set(activity, key, msg.SET_ACTIVITY_VALUE[key])
         })
+      }
+
+      // validating the activity
+      if (activity.text) {
+        if (_.isObject(activity.text)) {
+          const msg = `Activity is not correct. There is a JSON ${JSON.stringify(activity.text)} in text field. Check your capabilities`
+          if (this.caps.DIRECTLINE3_ACTIVITY_VALIDATION === 'error') {
+            reject(new Error(msg))
+          } else {
+            debug(msg)
+          }
+        }
       }
 
       if (msg.media && msg.media.length > 0) {
