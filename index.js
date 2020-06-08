@@ -7,14 +7,7 @@ const FormData = require('form-data')
 const fetch = require('node-fetch')
 const fs = require('fs')
 const path = require('path')
-
-global.XMLHttpRequest = require('xhr2')
-
-if (debug.enabled) {
-  global.window = Object.assign(global.window || {}, { botchatDebug: true })
-} else {
-  global.window = Object.assign(global.window || {}, { botchatDebug: false })
-}
+const xhr2 = require('xhr2')
 
 const Capabilities = {
   DIRECTLINE3_SECRET: 'DIRECTLINE3_SECRET',
@@ -78,6 +71,10 @@ class BotiumConnectorDirectline3 {
 
   Start () {
     debug('Start called')
+    global.XMLHttpRequest = xhr2
+    if (debug.enabled) {
+      global.window = Object.assign(global.window || {}, { botchatDebug: true })
+    }
     this._stopSubscription()
     this.directLine = new DirectLine({
       secret: this.caps.DIRECTLINE3_SECRET,

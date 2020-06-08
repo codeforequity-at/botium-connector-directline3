@@ -1,6 +1,6 @@
 {
   "name": "botium-connector-directline3",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "Botium Connector for Bot Framework Direct Line 3 API",
   "main": "dist/botium-connector-directline3-cjs.js",
   "module": "dist/botium-connector-directline3-es.js",
@@ -13,12 +13,12 @@
     "type": "git",
     "url": "git+https://github.com/codeforequity-at/botium-connector-directline3.git"
   },
-  "author": "Florian Treml",
+  "author": "Botium GmbH",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/codeforequity-at/botium-connector-directline3/issues"
   },
-  "homepage": "https://github.com/codeforequity-at/botium-connector-directline3#readme",
+  "homepage": "https://www.botium.ai",
   "devDependencies": {
     "@babel/core": "^7.8.7",
     "@babel/node": "^7.8.7",
