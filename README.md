@@ -8,6 +8,9 @@
 
 This is a [Botium](https://github.com/codeforequity-at/botium-core) connector for testing your Microsoft Bot Framework chatbots.
 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/WsNaDfZ7WHk" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+
 __Did you read the [Botium in a Nutshell](https://medium.com/@floriantreml/botium-in-a-nutshell-part-1-overview-f8d0ceaf8fb4) articles ? Be warned, without prior knowledge of Botium you won't be able to properly use this library!__
 
 ## How it works?
