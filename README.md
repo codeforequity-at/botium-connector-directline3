@@ -169,12 +169,38 @@ By default, for _event_ activities the _name_ attribute is used as message text,
 ### DIRECTLINE3_ACTIVITY_TEMPLATE
 _default: {}_
 
-JSON object holding the activity template used for sending activities to the bot.
+JSON object holding the activity template used for sending activities to the bot. Can be used to hold for example channelData:
+
+    ...
+    "DIRECTLINE3_ACTIVITY_TEMPLATE": {
+      "channelData": {
+        "kb": "demo"
+      }
+    },
+    ...
 
 ### DIRECTLINE3_ACTIVITY_VALIDATION
-_default: 'error'
+_default: 'error'_
 
 Set to 'warning' if you want to suppress activity validation errors.
+
+### DIRECTLINE3_WELCOME_ACTIVITY
+_default: empty_
+
+Send some activity upfront to start a session. Can be used to simulate the webchat/join event.
+
+    ...
+    "DIRECTLINE3_WELCOME_ACTIVITY": {
+      "type": "event",
+      "name": "webchat/join",
+      "value": {
+        "language": "de-DE"
+      },
+      "channelData": {
+        "kb": "demo"
+      }
+    },
+    ...
 
 # Current Restrictions
 

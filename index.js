@@ -20,7 +20,8 @@ const Capabilities = {
   DIRECTLINE3_HANDLE_ACTIVITY_TYPES: 'DIRECTLINE3_HANDLE_ACTIVITY_TYPES',
   DIRECTLINE3_ACTIVITY_VALUE_MAP: 'DIRECTLINE3_ACTIVITY_VALUE_MAP',
   DIRECTLINE3_ACTIVITY_TEMPLATE: 'DIRECTLINE3_ACTIVITY_TEMPLATE',
-  DIRECTLINE3_ACTIVITY_VALIDATION: 'DIRECTLINE3_ACTIVITY_VALIDATION'
+  DIRECTLINE3_ACTIVITY_VALIDATION: 'DIRECTLINE3_ACTIVITY_VALIDATION',
+  DIRECTLINE3_WELCOME_ACTIVITY: 'DIRECTLINE3_WELCOME_ACTIVITY'
 }
 
 const Defaults = {
@@ -42,7 +43,7 @@ class BotiumConnectorDirectline3 {
     this.caps = caps
   }
 
-  Validate () {
+  async Validate () {
     debug('Validate called')
 
     this.caps = Object.assign({}, Defaults, _.pickBy(this.caps, (value, key) => !Object.prototype.hasOwnProperty.call(Defaults, key) || !_.isString(value) || value !== ''))
@@ -62,16 +63,13 @@ class BotiumConnectorDirectline3 {
         this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE = JSON.parse(this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE)
       }
     }
-
-    return Promise.resolve()
   }
 
-  Build () {
+  async Build () {
     debug('Build called')
-    return Promise.resolve()
   }
 
-  Start () {
+  async Start () {
     debug('Start called')
     global.XMLHttpRequest = xhr2
     if (debug.enabled) {
@@ -276,6 +274,22 @@ class BotiumConnectorDirectline3 {
             break
           case ConnectionStatus.Online:
             debug(`Directline Connection Status: ${connectionStatus} / Online`)
+            if (this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY]) {
+              if (_.isString(this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY])) {
+                let initActivity = null
+                try {
+                  initActivity = JSON.parse(this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY])
+                } catch (err) {
+                }
+                if (initActivity) {
+                  this.UserSays({ sourceData: initActivity }).catch(err => debug(`Failed to send DIRECTLINE3_WELCOME_ACTIVITY: ${err.message}`))
+                } else {
+                  this.UserSays({ messageText: this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY] }).catch(err => debug(`Failed to send DIRECTLINE3_WELCOME_ACTIVITY: ${err.message}`))
+                }
+              } else {
+                this.UserSays({ sourceData: this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY] }).catch(err => debug(`Failed to send DIRECTLINE3_WELCOME_ACTIVITY: ${err.message}`))
+              }
+            }
             break
           case ConnectionStatus.ExpiredToken:
             debug(`Directline Connection Status: ${connectionStatus} / ExpiredToken`)
@@ -288,8 +302,6 @@ class BotiumConnectorDirectline3 {
             break
         }
       })
-
-    return Promise.resolve()
   }
 
   UserSays (msg) {
@@ -308,7 +320,9 @@ class BotiumConnectorDirectline3 {
         if (!activity.type) {
           activity.type = 'message'
         }
-        activity.text = msg.messageText
+        if (!_.isUndefined(msg.messageText)) {
+          activity.text = msg.messageText
+        }
       }
       if (!activity.from) {
         activity.from = { id: this.me }
