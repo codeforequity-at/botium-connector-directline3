@@ -1,0 +1,13 @@
+invalid language identifier
+
+#me
+help
+
+#bot
+
+
+#me
+BUTTON card broken:lang|Show an Adaptive Card that is broken because of invalid language identifier
+
+#bot
+Showing broken:lang
