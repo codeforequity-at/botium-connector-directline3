@@ -1,6 +1,6 @@
 {
   "name": "botium-connector-directline3",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "description": "Botium Connector for Bot Framework Direct Line 3 API",
   "main": "dist/botium-connector-directline3-cjs.js",
   "module": "dist/botium-connector-directline3-es.js",
