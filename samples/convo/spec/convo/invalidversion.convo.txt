@@ -1,0 +1,7 @@
+invalid version
+
+#me
+BUTTON card broken|Show an Adaptive Card that is broken because of invalid version
+
+#bot
+Showing broken

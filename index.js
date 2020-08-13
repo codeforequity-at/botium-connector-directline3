@@ -461,6 +461,9 @@ class BotiumConnectorDirectline3 {
   }
 
   _deepFilter (item, selectFn, filterFn) {
+    if (!item) {
+      return []
+    }
     let result = []
     if (_.isArray(item)) {
       item.filter(selectFn).forEach(subItem => {
