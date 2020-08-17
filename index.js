@@ -24,6 +24,7 @@ const Capabilities = {
   DIRECTLINE3_WELCOME_ACTIVITY: 'DIRECTLINE3_WELCOME_ACTIVITY'
 }
 
+const { BotiumError } = require('botium-core')
 const Defaults = {
   [Capabilities.DIRECTLINE3_WEBSOCKET]: true,
   [Capabilities.DIRECTLINE3_POLLINGINTERVAL]: 1000,
@@ -375,6 +376,17 @@ class BotiumConnectorDirectline3 {
               filename: attachmentName
             })
           } else if (attachment.downloadUri && attachment.downloadUri.startsWith('file://')) {
+            if (!this.caps[Capabilities.SECURITY_ALLOW_UNSAFE]) {
+              throw new BotiumError(
+                'Security Error. Sending attachment using the filesystem is not allowed',
+                {
+                  type: 'security',
+                  subtype: 'allow unsafe',
+                  source: path.basename(__filename),
+                  cause: { attachment }
+                }
+              )
+            }
             const filepath = attachment.downloadUri.split('file://')[1]
             formData.append('file', fs.createReadStream(filepath), {
               filename: attachmentName
