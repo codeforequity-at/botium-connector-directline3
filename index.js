@@ -25,6 +25,7 @@ const Capabilities = {
 }
 
 const { BotiumError } = require('botium-core')
+
 const Defaults = {
   [Capabilities.DIRECTLINE3_WEBSOCKET]: true,
   [Capabilities.DIRECTLINE3_POLLINGINTERVAL]: 1000,
@@ -382,7 +383,7 @@ class BotiumConnectorDirectline3 {
                 {
                   type: 'security',
                   subtype: 'allow unsafe',
-                  source: path.basename(__filename),
+                  source: 'botium-connector-directline',
                   cause: { attachment }
                 }
               )
