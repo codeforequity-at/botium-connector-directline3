@@ -128,8 +128,6 @@ If not using the default Direct Line endpoint, e.g. if you are using a region-sp
 _true or false_
 Wether to use Websocket connection or HTTP polling. Usually, using Websockets is prefered, but sometimes this is not possible (maybe with blocking proxies).
 
-_Currently, only HTTP polling supported (Bot Framework restriction)_
-
 ### DIRECTLINE3_POLLINGINTERVAL
 _in milliseconds_
 HTTP Polling interval
@@ -201,8 +199,3 @@ Send some activity upfront to start a session. Can be used to simulate the webch
       }
     },
     ...
-
-# Current Restrictions
-
-* Only HTTP Polling supported (WebSocket not available in Node.js)
-* Typing indicator is not transmitted over HTTP Polling (Bot Framework restriction)
