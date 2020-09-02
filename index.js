@@ -24,6 +24,8 @@ const Capabilities = {
   DIRECTLINE3_WELCOME_ACTIVITY: 'DIRECTLINE3_WELCOME_ACTIVITY'
 }
 
+const { BotiumError, Capabilities: CoreCapabilities } = require('botium-core')
+
 const Defaults = {
   [Capabilities.DIRECTLINE3_WEBSOCKET]: true,
   [Capabilities.DIRECTLINE3_POLLINGINTERVAL]: 1000,
@@ -375,6 +377,19 @@ class BotiumConnectorDirectline3 {
               filename: attachmentName
             })
           } else if (attachment.downloadUri && attachment.downloadUri.startsWith('file://')) {
+            // This check is maybe not required. If possible and safe, MediaImport extracts Buffer from downloadUri.
+            // This if-case should not be called at all.
+            if (!this.caps[CoreCapabilities.SECURITY_ALLOW_UNSAFE]) {
+              return reject(new BotiumError(
+                'Security Error. Illegal configured MediaInput. Sending attachment using the filesystem is not allowed',
+                {
+                  type: 'security',
+                  subtype: 'allow unsafe',
+                  source: 'botium-connector-directline',
+                  cause: { attachment }
+                }
+              ))
+            }
             const filepath = attachment.downloadUri.split('file://')[1]
             formData.append('file', fs.createReadStream(filepath), {
               filename: attachmentName
