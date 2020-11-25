@@ -327,7 +327,7 @@ class BotiumConnectorDirectline3 {
         this.UserSays({ sourceData: this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY] }).catch(err => debug(`Failed to send DIRECTLINE3_WELCOME_ACTIVITY: ${err.message}`))
       }
     } else {
-      this.directLine.postActivity({}).subscribe(
+      this.directLine.getSessionId().subscribe(
         () => {},
         () => {}
       )
