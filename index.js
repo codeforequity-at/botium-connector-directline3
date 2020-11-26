@@ -8,6 +8,7 @@ const fetch = require('node-fetch')
 const fs = require('fs')
 const path = require('path')
 const xhr2 = require('xhr2')
+const ws = require('ws')
 
 const Capabilities = {
   DIRECTLINE3_SECRET: 'DIRECTLINE3_SECRET',
@@ -74,6 +75,7 @@ class BotiumConnectorDirectline3 {
   async Start () {
     debug('Start called')
     global.XMLHttpRequest = xhr2
+    global.WebSocket = ws
     if (debug.enabled) {
       global.window = Object.assign(global.window || {}, { botchatDebug: true })
     }
@@ -263,47 +265,77 @@ class BotiumConnectorDirectline3 {
             // give userSays some time
             setTimeout(() => this.queueBotSays(botMsg), 200)
           }
+        },
+        err => {
+          debug(`Error in waiting for activities: ${err.message}`)
         }
       )
+
+    let resultResolve = null
+    let resultReject = null
+    const resultPromise = new Promise((resolve, reject) => {
+      resultResolve = resolve
+      resultReject = reject
+    })
+
     this.connSubscription = this.directLine.connectionStatus$
-      .subscribe(connectionStatus => {
-        switch (connectionStatus) {
-          case ConnectionStatus.Uninitialized:
-            debug(`Directline Connection Status: ${connectionStatus} / Uninitialized`)
-            break
-          case ConnectionStatus.Connecting:
-            debug(`Directline Connection Status: ${connectionStatus} / Connecting`)
-            break
-          case ConnectionStatus.Online:
-            debug(`Directline Connection Status: ${connectionStatus} / Online`)
-            if (this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY]) {
-              if (_.isString(this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY])) {
-                let initActivity = null
-                try {
-                  initActivity = JSON.parse(this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY])
-                } catch (err) {
-                }
-                if (initActivity) {
-                  this.UserSays({ sourceData: initActivity }).catch(err => debug(`Failed to send DIRECTLINE3_WELCOME_ACTIVITY: ${err.message}`))
-                } else {
-                  this.UserSays({ messageText: this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY] }).catch(err => debug(`Failed to send DIRECTLINE3_WELCOME_ACTIVITY: ${err.message}`))
-                }
-              } else {
-                this.UserSays({ sourceData: this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY] }).catch(err => debug(`Failed to send DIRECTLINE3_WELCOME_ACTIVITY: ${err.message}`))
-              }
-            }
-            break
-          case ConnectionStatus.ExpiredToken:
-            debug(`Directline Connection Status: ${connectionStatus} / ExpiredToken`)
-            break
-          case ConnectionStatus.FailedToConnect:
-            debug(`Directline Connection Status: ${connectionStatus} / FailedToConnect`)
-            break
-          case ConnectionStatus.Ended:
-            debug(`Directline Connection Status: ${connectionStatus} / Ended`)
-            break
+      .subscribe(
+        connectionStatus => {
+          switch (connectionStatus) {
+            case ConnectionStatus.Uninitialized:
+              debug(`Directline Connection Status: ${connectionStatus} / Uninitialized`)
+              break
+            case ConnectionStatus.Connecting:
+              debug(`Directline Connection Status: ${connectionStatus} / Connecting`)
+              break
+            case ConnectionStatus.Online:
+              debug(`Directline Connection Status: ${connectionStatus} / Online`)
+              resultResolve && resultResolve()
+              resultResolve = null
+              break
+            case ConnectionStatus.ExpiredToken:
+              debug(`Directline Connection Status: ${connectionStatus} / ExpiredToken`)
+              resultReject && resultReject(new Error('Directline token expired'))
+              resultReject = null
+              break
+            case ConnectionStatus.FailedToConnect:
+              debug(`Directline Connection Status: ${connectionStatus} / FailedToConnect`)
+              resultReject && resultReject(new Error('Directline failed to connect - check the Directline Secret'))
+              resultReject = null
+              break
+            case ConnectionStatus.Ended:
+              debug(`Directline Connection Status: ${connectionStatus} / Ended`)
+              break
+          }
+        },
+        err => {
+          debug(`Error in waiting for connectionStatus: ${err.message}`)
         }
-      })
+      )
+
+    if (this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY]) {
+      if (_.isString(this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY])) {
+        let initActivity = null
+        try {
+          initActivity = JSON.parse(this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY])
+        } catch (err) {
+        }
+        if (initActivity) {
+          this.UserSays({ sourceData: initActivity }).catch(err => debug(`Failed to send DIRECTLINE3_WELCOME_ACTIVITY: ${err.message}`))
+        } else {
+          this.UserSays({ messageText: this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY] }).catch(err => debug(`Failed to send DIRECTLINE3_WELCOME_ACTIVITY: ${err.message}`))
+        }
+      } else {
+        this.UserSays({ sourceData: this.caps[Capabilities.DIRECTLINE3_WELCOME_ACTIVITY] }).catch(err => debug(`Failed to send DIRECTLINE3_WELCOME_ACTIVITY: ${err.message}`))
+      }
+    } else {
+      this.directLine.getSessionId().subscribe(
+        () => {},
+        () => {}
+      )
+    }
+
+    return resultPromise
   }
 
   UserSays (msg) {
@@ -459,14 +491,22 @@ class BotiumConnectorDirectline3 {
 
   _stopSubscription () {
     if (this.subscription) {
-      debug('unsubscribing from directline activity subscription')
-      this.subscription.unsubscribe()
-      this.subscription = null
+      try {
+        this.subscription.unsubscribe()
+        this.subscription = null
+        debug('unsubscribed from directline activity subscription')
+      } catch (err) {
+        debug(`unsubscribing from directline activity subscription failed: ${err.message}`)
+      }
     }
     if (this.connSubscription) {
-      debug('unsubscribing from directline connectionstatus subscription')
-      this.connSubscription.unsubscribe()
-      this.connSubscription = null
+      try {
+        this.connSubscription.unsubscribe()
+        this.connSubscription = null
+        debug('unsubscribing from directline connectionstatus subscription')
+      } catch (err) {
+        debug(`unsubscribing from directline connectionstatus subscription failed: ${err.message}`)
+      }
     }
     if (this.directLine) {
       debug('ending directline connection')

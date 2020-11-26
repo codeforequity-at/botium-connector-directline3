@@ -45,6 +45,7 @@
     "mime-types": "^2.1.26",
     "node-fetch": "^2.6.0",
     "uuid": "^7.0.2",
+    "ws": "^7.3.1",
     "xhr2": "^0.2.0"
   },
   "peerDependencies": {
