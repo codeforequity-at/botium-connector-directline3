@@ -8,11 +8,6 @@
 
 This is a [Botium](https://github.com/codeforequity-at/botium-core) connector for testing your Microsoft Bot Framework chatbots.
 
-**UPDATE 2020/06/15:** As Chatbots grow in importance, automated testing solutions will remain critical for ensuring that Chatbots actually do what their designers intend. We've been busy working on a product that allows testers to have visual insights and deeper understanding in their Chatbot's performance, offering several solutions to boost their interaction!
-[Botium Coach will be introduced to the market as part of our online event on the 24th of June.](https://www.botium.ai/coach/)
-
-[![](http://img.youtube.com/vi/WsNaDfZ7WHk/0.jpg)](http://www.youtube.com/watch?v=WsNaDfZ7WHk "Botium Coach is coming on 24th of June")
-
 __Did you read the [Botium in a Nutshell](https://medium.com/@floriantreml/botium-in-a-nutshell-part-1-overview-f8d0ceaf8fb4) articles ? Be warned, without prior knowledge of Botium you won't be able to properly use this library!__
 
 ## How it works?
@@ -23,11 +18,11 @@ The Direct Line version number does not correspond to the Microsoft Bot Framewor
 It can be used as any other Botium connector with all Botium Stack components:
 * [Botium CLI](https://github.com/codeforequity-at/botium-cli/)
 * [Botium Bindings](https://github.com/codeforequity-at/botium-bindings/)
-* [Botium Box](https://www.botium.at)
+* [Botium Box](https://www.botium.ai)
 
 
 ## Features
-* Button, Media, Card, Form extraction. Accordingly it is possible to use a corresponding [Botium Asserter](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/2293815/Botium+Asserters).
+* Button, Media, Card, Form extraction.
 * Adaptive Card support. 
 
 ## Requirements
@@ -84,11 +79,11 @@ To check the configuration, run the emulator (Botium CLI required) to bring up a
 > botium-cli emulator
 ```
 
-Botium setup is ready, you can begin to write your [BotiumScript](https://github.com/codeforequity-at/botium-core/wiki/Botium-Scripting) files.
+Botium setup is ready, you can begin to write your [BotiumScript](https://botium-docs.readthedocs.io/en/latest/05_botiumscript/index.html) files.
 
 ## Finetuning Directline3 Activity
 
-For finetuning the [Activity object](https://docs.microsoft.com/en-us/azure/bot-service/rest-api/bot-framework-rest-connector-api-reference?view=azure-bot-service-4.0#activity-object) sent to your bot, you can use the [UPDATE_CUSTOM logic hook](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/48660497/Integrated+Logic+Hooks). This example will add some custom values to the [channelData](https://docs.microsoft.com/en-us/azure/bot-service/rest-api/bot-framework-rest-connector-channeldata?view=azure-bot-service-4.0):
+For finetuning the [Activity object](https://docs.microsoft.com/en-us/azure/bot-service/rest-api/bot-framework-rest-connector-api-reference?view=azure-bot-service-4.0#activity-object) sent to your bot, you can use the [UPDATE_CUSTOM logic hook](https://botium-docs.readthedocs.io/en/latest/05_botiumscript/index.html#update-custom). This example will add some custom values to the [channelData](https://docs.microsoft.com/en-us/azure/bot-service/rest-api/bot-framework-rest-connector-channeldata?view=azure-bot-service-4.0):
 
     #me
     do some channel specific thingy ...
