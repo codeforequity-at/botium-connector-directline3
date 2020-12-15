@@ -7,7 +7,6 @@ upload
 You have uploaded no files.
 
 #me
-upload
-MEDIA https://www.botium.at/images/logo.png
+MEDIA https://botium-ac3a.kxcdn.com/wp-content/uploads/2020/03/botium-120x33.png
 
 #bot
