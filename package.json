@@ -38,6 +38,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.8.7",
+    "better-queue": "^3.8.10",
     "botframework-directlinejs": "^0.11.6",
     "debug": "^4.1.1",
     "form-data": "^3.0.0",

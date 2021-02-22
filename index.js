@@ -5,6 +5,7 @@ const { DirectLine, ConnectionStatus } = require('botframework-directlinejs')
 const debug = require('debug')('botium-connector-directline3')
 const FormData = require('form-data')
 const fetch = require('node-fetch')
+const Queue = require('better-queue')
 const fs = require('fs')
 const path = require('path')
 const xhr2 = require('xhr2')
@@ -74,6 +75,10 @@ class BotiumConnectorDirectline3 {
 
   async Start () {
     debug('Start called')
+    this.queue = new Queue((input, cb) => {
+      input().then(result => cb(null, result)).catch(err => cb(err))
+    })
+
     global.XMLHttpRequest = xhr2
     global.WebSocket = ws
     if (debug.enabled) {
@@ -261,7 +266,7 @@ class BotiumConnectorDirectline3 {
                 botMsg.messageText = message.type
               }
             }
-            setTimeout(() => this.queueBotSays(botMsg), 0)
+            this._runInQueue(async () => { this.queueBotSays(botMsg) })
           }
         },
         err => {
@@ -336,131 +341,134 @@ class BotiumConnectorDirectline3 {
     return resultPromise
   }
 
-  UserSays (msg) {
+  async UserSays (msg) {
     debug('UserSays called')
-    return new Promise(async (resolve, reject) => { // eslint-disable-line no-async-promise-executor
-      const activity = Object.assign({}, msg.sourceData || this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE || {})
-      if (msg.buttons && msg.buttons.length > 0 && (msg.buttons[0].text || msg.buttons[0].payload)) {
-        let payload = msg.buttons[0].payload || msg.buttons[0].text
+
+    const activity = Object.assign({}, msg.sourceData || this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE || {})
+    if (msg.buttons && msg.buttons.length > 0 && (msg.buttons[0].text || msg.buttons[0].payload)) {
+      let payload = msg.buttons[0].payload || msg.buttons[0].text
+      try {
+        payload = JSON.parse(payload)
+      } catch (err) {
+      }
+      activity.type = this.caps[Capabilities.DIRECTLINE3_BUTTON_TYPE]
+      _.set(activity, this.caps[Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD], payload)
+    } else {
+      if (!activity.type) {
+        activity.type = 'message'
+      }
+      if (!_.isUndefined(msg.messageText)) {
+        activity.text = msg.messageText
+      }
+    }
+    if (!activity.from) {
+      activity.from = { id: this.me }
+    } else if (!activity.from.id) {
+      activity.from.id = this.me
+    }
+
+    if (msg.forms) {
+      activity.value = activity.value || {}
+      msg.forms.forEach(f => {
+        _.set(activity.value, f.name, f.value)
+      })
+    }
+
+    if (msg.SET_ACTIVITY_VALUE) {
+      _.keys(msg.SET_ACTIVITY_VALUE).forEach(key => {
+        _.set(activity, key, msg.SET_ACTIVITY_VALUE[key])
+      })
+    }
+
+    // validating the activity
+    if (activity.text) {
+      if (_.isObject(activity.text)) {
+        const msg = `Activity is not correct. There is a JSON ${JSON.stringify(activity.text)} in text field. Check your capabilities`
+        if (this.caps.DIRECTLINE3_ACTIVITY_VALIDATION === 'error') {
+          throw new Error(msg)
+        } else {
+          debug(msg)
+        }
+      }
+    }
+
+    if (msg.media && msg.media.length > 0) {
+      debug('Posting activity with attachments ', JSON.stringify(activity, null, 2))
+      msg.sourceData = Object.assign(msg.sourceData || {}, { activity })
+
+      const formData = new FormData()
+
+      formData.append('activity', Buffer.from(JSON.stringify(activity)), {
+        contentType: 'application/vnd.microsoft.activity',
+        filename: 'blob'
+      })
+
+      for (let i = 0; i < msg.media.length; i++) {
+        const attachment = msg.media[i]
+        const attachmentName = path.basename(attachment.mediaUri)
+
+        if (attachment.buffer) {
+          formData.append('file', attachment.buffer, {
+            filename: attachmentName
+          })
+        } else if (attachment.downloadUri && attachment.downloadUri.startsWith('file://')) {
+          // This check is maybe not required. If possible and safe, MediaImport extracts Buffer from downloadUri.
+          // This if-case should not be called at all.
+          if (!this.caps[CoreCapabilities.SECURITY_ALLOW_UNSAFE]) {
+            throw new BotiumError(
+              'Security Error. Illegal configured MediaInput. Sending attachment using the filesystem is not allowed',
+              {
+                type: 'security',
+                subtype: 'allow unsafe',
+                source: 'botium-connector-directline',
+                cause: { attachment }
+              }
+            )
+          }
+          const filepath = attachment.downloadUri.split('file://')[1]
+          formData.append('file', fs.createReadStream(filepath), {
+            filename: attachmentName
+          })
+        } else if (attachment.downloadUri) {
+          const res = await fetch(attachment.downloadUri)
+          const body = await res.buffer()
+
+          formData.append('file', body, {
+            filename: attachmentName
+          })
+        } else {
+          throw new Error(`Media attachment ${attachment.mediaUri} not downloaded`)
+        }
+      }
+
+      await this.directLine.checkConnection(true)
+      const uploadUrl = `${this.directLine.domain}/conversations/${this.directLine.conversationId}/upload?userId=${activity.from.id}`
+      debug(`Uploading attachments to ${uploadUrl}`)
+      return this._runInQueue(async () => {
         try {
-          payload = JSON.parse(payload)
-        } catch (err) {
-        }
-        activity.type = this.caps[Capabilities.DIRECTLINE3_BUTTON_TYPE]
-        _.set(activity, this.caps[Capabilities.DIRECTLINE3_BUTTON_VALUE_FIELD], payload)
-      } else {
-        if (!activity.type) {
-          activity.type = 'message'
-        }
-        if (!_.isUndefined(msg.messageText)) {
-          activity.text = msg.messageText
-        }
-      }
-      if (!activity.from) {
-        activity.from = { id: this.me }
-      } else if (!activity.from.id) {
-        activity.from.id = this.me
-      }
-
-      if (msg.forms) {
-        activity.value = activity.value || {}
-        msg.forms.forEach(f => {
-          _.set(activity.value, f.name, f.value)
-        })
-      }
-
-      if (msg.SET_ACTIVITY_VALUE) {
-        _.keys(msg.SET_ACTIVITY_VALUE).forEach(key => {
-          _.set(activity, key, msg.SET_ACTIVITY_VALUE[key])
-        })
-      }
-
-      // validating the activity
-      if (activity.text) {
-        if (_.isObject(activity.text)) {
-          const msg = `Activity is not correct. There is a JSON ${JSON.stringify(activity.text)} in text field. Check your capabilities`
-          if (this.caps.DIRECTLINE3_ACTIVITY_VALIDATION === 'error') {
-            reject(new Error(msg))
-          } else {
-            debug(msg)
-          }
-        }
-      }
-
-      if (msg.media && msg.media.length > 0) {
-        debug('Posting activity with attachments ', JSON.stringify(activity, null, 2))
-        msg.sourceData = Object.assign(msg.sourceData || {}, { activity })
-
-        const formData = new FormData()
-
-        formData.append('activity', Buffer.from(JSON.stringify(activity)), {
-          contentType: 'application/vnd.microsoft.activity',
-          filename: 'blob'
-        })
-
-        for (let i = 0; i < msg.media.length; i++) {
-          const attachment = msg.media[i]
-          const attachmentName = path.basename(attachment.mediaUri)
-
-          if (attachment.buffer) {
-            formData.append('file', attachment.buffer, {
-              filename: attachmentName
-            })
-          } else if (attachment.downloadUri && attachment.downloadUri.startsWith('file://')) {
-            // This check is maybe not required. If possible and safe, MediaImport extracts Buffer from downloadUri.
-            // This if-case should not be called at all.
-            if (!this.caps[CoreCapabilities.SECURITY_ALLOW_UNSAFE]) {
-              return reject(new BotiumError(
-                'Security Error. Illegal configured MediaInput. Sending attachment using the filesystem is not allowed',
-                {
-                  type: 'security',
-                  subtype: 'allow unsafe',
-                  source: 'botium-connector-directline',
-                  cause: { attachment }
-                }
-              ))
-            }
-            const filepath = attachment.downloadUri.split('file://')[1]
-            formData.append('file', fs.createReadStream(filepath), {
-              filename: attachmentName
-            })
-          } else if (attachment.downloadUri) {
-            const res = await fetch(attachment.downloadUri)
-            const body = await res.buffer()
-
-            formData.append('file', body, {
-              filename: attachmentName
-            })
-          } else {
-            return reject(new Error(`Media attachment ${attachment.mediaUri} not downloaded`))
-          }
-        }
-
-        await this.directLine.checkConnection(true)
-        const uploadUrl = `${this.directLine.domain}/conversations/${this.directLine.conversationId}/upload?userId=${activity.from.id}`
-        debug(`Uploading attachments to ${uploadUrl}`)
-        fetch(uploadUrl, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${this.directLine.token}`
-          },
-          body: formData
-        }).then(async (res) => {
+          const res = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${this.directLine.token}`
+            },
+            body: formData
+          })
           const json = await res.json()
           if (json && json.id) {
             debug('Posted activity with attachments, assigned ID:', json.id)
-            resolve()
           } else {
-            reject(new Error('Error posting activity with attachments, no activity id returned'))
+            throw new Error('No activity id returned')
           }
-        }).catch(err => {
+        } catch (err) {
           debug('Error posting activity with attachments', err)
-          reject(new Error(`Error posting activity: ${err.message || err}`))
-        })
-      } else {
-        debug('Posting activity ', JSON.stringify(activity, null, 2))
-        msg.sourceData = Object.assign(msg.sourceData || {}, { activity })
+          throw new Error(`Error posting activity: ${err.message || err}`)
+        }
+      })
+    } else {
+      debug('Posting activity ', JSON.stringify(activity, null, 2))
+      msg.sourceData = Object.assign(msg.sourceData || {}, { activity })
 
+      return this._runInQueue(() => new Promise((resolve, reject) => {
         this.directLine.postActivity(activity).subscribe(
           id => {
             debug('Posted activity, assigned ID:', id)
@@ -471,20 +479,19 @@ class BotiumConnectorDirectline3 {
             reject(new Error(`Error posting activity: ${err.message || err}`))
           }
         )
-      }
-    })
+      }))
+    }
   }
 
-  Stop () {
+  async Stop () {
     debug('Stop called')
+    this.queue = null
     this._stopSubscription()
-    return Promise.resolve()
   }
 
-  Clean () {
+  async Clean () {
     debug('Clean called')
     this._stopSubscription()
-    return Promise.resolve()
   }
 
   _stopSubscription () {
@@ -510,6 +517,18 @@ class BotiumConnectorDirectline3 {
       debug('ending directline connection')
       this.directLine.end()
       this.directLine = null
+    }
+  }
+
+  async _runInQueue (fn) {
+    if (this.queue) {
+      return new Promise((resolve, reject) => {
+        this.queue.push(fn)
+          .on('finish', resolve)
+          .on('failed', reject)
+      })
+    } else {
+      throw new Error('Connector not yet started')
     }
   }
 
