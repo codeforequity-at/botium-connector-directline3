@@ -261,9 +261,7 @@ class BotiumConnectorDirectline3 {
                 botMsg.messageText = message.type
               }
             }
-
-            // give userSays some time
-            setTimeout(() => this.queueBotSays(botMsg), 200)
+            setTimeout(() => this.queueBotSays(botMsg), 0)
           }
         },
         err => {
