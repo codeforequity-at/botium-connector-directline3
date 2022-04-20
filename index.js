@@ -1,4 +1,4 @@
-const uuidv4 = require('uuid/v4')
+const uuidv4 = require('uuid').v4
 const mime = require('mime-types')
 const _ = require('lodash')
 const { DirectLine, ConnectionStatus } = require('botframework-directlinejs')
@@ -95,7 +95,7 @@ class BotiumConnectorDirectline3 {
     if (this.caps.DIRECTLINE3_GENERATE_USERNAME) {
       this.me = uuidv4()
     } else {
-      this.me = 'me'
+      this.me = (this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE && _.get(this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE, 'from.id')) || 'me'
     }
 
     const isValidActivityType = (activityType) => {
