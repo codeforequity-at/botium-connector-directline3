@@ -558,5 +558,13 @@ class BotiumConnectorDirectline3 {
 
 module.exports = {
   PluginVersion: 1,
-  PluginClass: BotiumConnectorDirectline3
+  PluginClass: BotiumConnectorDirectline3,
+  PluginDesc: {
+    name: 'Microsoft Bot Framework (Directline 3)',
+    provider: 'Microsoft',
+    features: {
+      sendAttachments: true,
+      audioInput: true
+    }
+  }
 }
