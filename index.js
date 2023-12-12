@@ -97,6 +97,7 @@ class BotiumConnectorDirectline3 {
     } else {
       this.me = (this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE && _.get(this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE, 'from.id')) || 'me'
     }
+    this.directLine.setUserId(this.me)
 
     const isValidActivityType = (activityType) => {
       const filter = this.caps.DIRECTLINE3_HANDLE_ACTIVITY_TYPES
