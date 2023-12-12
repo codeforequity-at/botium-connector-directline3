@@ -41,7 +41,7 @@
   "dependencies": {
     "@babel/runtime": "^7.17.9",
     "better-queue": "^3.8.10",
-    "botframework-directlinejs": "^0.15.1",
+    "botframework-directlinejs": "^0.15.5",
     "debug": "^4.3.4",
     "form-data": "^4.0.0",
     "lodash": "^4.17.21",
