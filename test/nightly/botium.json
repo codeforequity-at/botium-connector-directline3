@@ -1,0 +1,16 @@
+{
+  "botium": {
+    "Capabilities": {
+      "PROJECTNAME": "Directline reg",
+      "CONTAINERMODE": "directline3",
+      "DIRECTLINE3_SECRET": "XBlcKo_40Gg.vVERiqeLPKcjpv_cGRE_1BIKRgo-c2Nruf_3mZUqhT8",
+      "DIRECTLINE3_WEBSOCKET": false,
+      "DIRECTLINE3_POLLINGINTERVAL": 1000,
+      "DIRECTLINE3_GENERATE_USERNAME": false,
+      "DIRECTLINE3_BUTTON_TYPE": "",
+      "DIRECTLINE3_BUTTON_VALUE_FIELD": ""
+    },
+    "Sources": {},
+    "Envs": {}
+  }
+}
