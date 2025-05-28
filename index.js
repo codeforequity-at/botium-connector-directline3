@@ -44,13 +44,11 @@ const Defaults = {
 class BotiumConnectorDirectline3 {
   constructor ({ queueBotSays, caps }) {
     this.queueBotSays = queueBotSays
-    this.caps = caps
+    this.caps = Object.assign({}, Defaults, _.pickBy(caps, (value, key) => !Object.prototype.hasOwnProperty.call(Defaults, key) || !_.isString(value) || value !== ''))
   }
 
   async Validate () {
     debug('Validate called')
-
-    this.caps = Object.assign({}, Defaults, _.pickBy(this.caps, (value, key) => !Object.prototype.hasOwnProperty.call(Defaults, key) || !_.isString(value) || value !== ''))
 
     if (!this.caps.DIRECTLINE3_SECRET) throw new Error('DIRECTLINE3_SECRET capability required')
     if (!this.caps.DIRECTLINE3_BUTTON_TYPE) throw new Error('DIRECTLINE3_BUTTON_TYPE capability required')
@@ -119,153 +117,7 @@ class BotiumConnectorDirectline3 {
           } else {
             debug('received message ', JSON.stringify(message, null, 2))
             this.receivedMessageIds[message.id] = true
-            const botMsg = { sender: 'bot', sourceData: message, media: [], buttons: [], cards: [], forms: [] }
-
-            if (message.type === 'message') {
-              botMsg.messageText = message.text || null
-
-              const mapButton = (b) => ({
-                text: b.title || b.text,
-                payload: b.value || b.url || b.data,
-                imageUri: b.image || b.iconUrl
-              })
-              const mapImage = (i) => ({
-                mediaUri: i.url,
-                mimeType: mime.lookup(i.url) || 'application/unknown',
-                altText: i.alt || i.altText
-              })
-              const mapMedia = (m) => ({
-                mediaUri: m.url,
-                mimeType: mime.lookup(m.url) || 'application/unknown',
-                altText: m.profile
-              })
-              const mapAdaptiveCardRecursive = (c) => {
-                const textBlocks = this._deepFilter(c.body, (t) => t.type, (t) => t.type === 'TextBlock')
-                const imageBlocks = this._deepFilter(c.body, (t) => t.type, (t) => t.type === 'Image')
-                const buttonBlocks = this._deepFilter(c.body, (t) => t.type, (t) => t.type.startsWith('Action.'))
-                const actions = (c.actions || []).concat((buttonBlocks && buttonBlocks.map(mapButton)) || [])
-                const subcards = actions.filter(a => (a.type === 'Action.ShowCard' && a.card && a.card.body)).map(a => mapAdaptiveCardRecursive(a.card))
-                const inputs = this._deepFilter(c.body, (t) => t.type, (t) => t.type.startsWith('Input.'))
-                const forms = []
-                for (const input of inputs) {
-                  forms.push({
-                    name: input.id,
-                    label: input.label,
-                    type: input.type.substring('Input.'.length),
-                    options: input.choices
-                  })
-                }
-                return {
-                  text: textBlocks && textBlocks.map(t => t.text),
-                  image: imageBlocks && imageBlocks.length > 0 && mapImage(imageBlocks[0]),
-                  buttons: actions.map(mapButton),
-                  media: imageBlocks && imageBlocks.length > 1 && imageBlocks.slice(1).map(mapImage),
-                  forms: forms.length ? forms : null,
-                  cards: subcards.length ? subcards : null,
-                  sourceData: c
-                }
-              }
-              message.attachments && message.attachments.forEach(a => {
-                if (a.contentType === 'application/vnd.microsoft.card.hero') {
-                  botMsg.cards.push({
-                    text: a.content.title || a.content.text,
-                    subtext: a.content.subtitle,
-                    content: a.content.text,
-                    image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
-                    buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                    media: a.content.images && a.content.images.length > 1 && a.content.images.slice(1).map(mapImage),
-                    sourceData: a
-                  })
-                } else if (a.contentType === 'application/vnd.microsoft.card.adaptive') {
-                  // if is send 'card inputs please' instead of 'card inputs' then there is an empty card in attachments
-                  if (a.content) {
-                    botMsg.cards.push(mapAdaptiveCardRecursive(a.content))
-                  }
-                } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
-                  a.contentType === 'application/vnd.microsoft.card.audio' ||
-                  a.contentType === 'application/vnd.microsoft.card.video') {
-                  botMsg.cards.push({
-                    text: a.content.title || a.content.text,
-                    subtext: a.content.subtitle,
-                    content: a.content.text,
-                    image: a.content.image && mapImage(a.content.image),
-                    buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                    media: a.content.media && a.content.media.map(mapMedia),
-                    sourceData: a
-                  })
-                } else if (a.contentType === 'application/vnd.microsoft.card.thumbnail') {
-                  botMsg.cards.push({
-                    text: a.content.title || a.content.text,
-                    subtext: a.content.subtitle,
-                    content: a.content.text,
-                    image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
-                    buttons: a.content.buttons && a.content.buttons.map(mapButton),
-                    media: a.content.images && a.content.images.length > 1 && a.content.images.slice(1).map(mapImage),
-                    sourceData: a
-                  })
-                } else if (a.contentType === 'text/markdown') {
-                  botMsg.cards.push({
-                    content: a.content,
-                    sourceData: {
-                      type: 'AdaptiveCard',
-                      body: [
-                        {
-                          type: 'TextBlock',
-                          text: a.content
-                        }
-                      ]
-                    }
-                  })
-                } else if (a.contentType === 'text/plain') {
-                  botMsg.cards.push({
-                    content: a.content
-                  })
-                } else if (a.contentType && a.contentUrl) {
-                  botMsg.media.push({
-                    mediaUri: a.contentUrl,
-                    mimeType: a.contentType,
-                    altText: a.name
-                  })
-                } else if (a.content && a.content.buttons && a.content.buttons.length > 0) {
-                  a.content.buttons.forEach(b => {
-                    botMsg.buttons.push(mapButton(b))
-                  })
-                }
-              })
-
-              message.suggestedActions && message.suggestedActions.actions && message.suggestedActions.actions.forEach(a => {
-                botMsg.buttons.push(mapButton(a))
-              })
-
-              if (message.entities && message.entities.length > 0) {
-                botMsg.entities = message.entities.map(e => ({
-                  name: e.name,
-                  value: e.value
-                }))
-              }
-
-              if (!botMsg.messageText && botMsg.cards) {
-                const card = botMsg.cards.find(c => c.text)
-                if (card && _.isArray(card.text) && card.text.length > 0) {
-                  botMsg.messageText = card.text[0]
-                } else if (card && _.isString(card.text)) {
-                  botMsg.messageText = card.text
-                }
-              }
-              if (!botMsg.messageText && botMsg.buttons) {
-                const button = botMsg.buttons.find(b => b.text)
-                if (button) {
-                  botMsg.messageText = button.text
-                }
-              }
-            } else {
-              const valueMap = this.caps.DIRECTLINE3_ACTIVITY_VALUE_MAP
-              if (valueMap && valueMap[message.type]) {
-                botMsg.messageText = message[valueMap[message.type]]
-              } else {
-                botMsg.messageText = message.type
-              }
-            }
+            const botMsg = this.ActivityToBotiumMsg(message)
             this._runInQueue(async () => { this.queueBotSays(botMsg) })
           }
         },
@@ -341,9 +193,160 @@ class BotiumConnectorDirectline3 {
     return resultPromise
   }
 
-  async UserSays (msg) {
-    debug('UserSays called')
+  ActivityToBotiumMsg (message) {
+    const botMsg = { sender: 'bot', sourceData: message, media: [], buttons: [], cards: [], forms: [] }
 
+    if (message.type === 'message') {
+      botMsg.messageText = message.text || null
+
+      const mapButton = (b) => ({
+        text: b.title || b.text,
+        payload: b.value || b.url || b.data,
+        imageUri: b.image || b.iconUrl
+      })
+      const mapImage = (i) => ({
+        mediaUri: i.url,
+        mimeType: mime.lookup(i.url) || 'application/unknown',
+        altText: i.alt || i.altText
+      })
+      const mapMedia = (m) => ({
+        mediaUri: m.url,
+        mimeType: mime.lookup(m.url) || 'application/unknown',
+        altText: m.profile
+      })
+      const mapAdaptiveCardRecursive = (c) => {
+        const textBlocks = this._deepFilter(c.body, (t) => t.type, (t) => t.type === 'TextBlock')
+        const imageBlocks = this._deepFilter(c.body, (t) => t.type, (t) => t.type === 'Image')
+        const buttonBlocks = this._deepFilter(c.body, (t) => t.type, (t) => t.type.startsWith('Action.'))
+        const actions = (c.actions || []).concat((buttonBlocks && buttonBlocks.map(mapButton)) || [])
+        const subcards = actions.filter(a => (a.type === 'Action.ShowCard' && a.card && a.card.body)).map(a => mapAdaptiveCardRecursive(a.card))
+        const inputs = this._deepFilter(c.body, (t) => t.type, (t) => t.type.startsWith('Input.'))
+        const forms = []
+        for (const input of inputs) {
+          forms.push({
+            name: input.id,
+            label: input.label,
+            type: input.type.substring('Input.'.length),
+            options: input.choices
+          })
+        }
+        return {
+          text: textBlocks && textBlocks.map(t => t.text),
+          image: imageBlocks && imageBlocks.length > 0 && mapImage(imageBlocks[0]),
+          buttons: actions.map(mapButton),
+          media: imageBlocks && imageBlocks.length > 1 && imageBlocks.slice(1).map(mapImage),
+          forms: forms.length ? forms : null,
+          cards: subcards.length ? subcards : null,
+          sourceData: c
+        }
+      }
+      message.attachments && message.attachments.forEach(a => {
+        if (a.contentType === 'application/vnd.microsoft.card.hero') {
+          botMsg.cards.push({
+            text: a.content.title || a.content.text,
+            subtext: a.content.subtitle,
+            content: a.content.text,
+            image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
+            buttons: a.content.buttons && a.content.buttons.map(mapButton),
+            media: a.content.images && a.content.images.length > 1 && a.content.images.slice(1).map(mapImage),
+            sourceData: a
+          })
+        } else if (a.contentType === 'application/vnd.microsoft.card.adaptive') {
+          // if is send 'card inputs please' instead of 'card inputs' then there is an empty card in attachments
+          if (a.content) {
+            botMsg.cards.push(mapAdaptiveCardRecursive(a.content))
+          }
+        } else if (a.contentType === 'application/vnd.microsoft.card.animation' ||
+          a.contentType === 'application/vnd.microsoft.card.audio' ||
+          a.contentType === 'application/vnd.microsoft.card.video') {
+          botMsg.cards.push({
+            text: a.content.title || a.content.text,
+            subtext: a.content.subtitle,
+            content: a.content.text,
+            image: a.content.image && mapImage(a.content.image),
+            buttons: a.content.buttons && a.content.buttons.map(mapButton),
+            media: a.content.media && a.content.media.map(mapMedia),
+            sourceData: a
+          })
+        } else if (a.contentType === 'application/vnd.microsoft.card.thumbnail') {
+          botMsg.cards.push({
+            text: a.content.title || a.content.text,
+            subtext: a.content.subtitle,
+            content: a.content.text,
+            image: a.content.images && a.content.images.length > 0 && mapImage(a.content.images[0]),
+            buttons: a.content.buttons && a.content.buttons.map(mapButton),
+            media: a.content.images && a.content.images.length > 1 && a.content.images.slice(1).map(mapImage),
+            sourceData: a
+          })
+        } else if (a.contentType === 'text/markdown') {
+          botMsg.cards.push({
+            content: a.content,
+            sourceData: {
+              type: 'AdaptiveCard',
+              body: [
+                {
+                  type: 'TextBlock',
+                  text: a.content
+                }
+              ]
+            }
+          })
+        } else if (a.contentType === 'text/plain') {
+          botMsg.cards.push({
+            content: a.content
+          })
+        } else if (a.contentType && a.contentUrl) {
+          botMsg.media.push({
+            mediaUri: a.contentUrl,
+            mimeType: a.contentType,
+            altText: a.name
+          })
+        } else if (a.content && a.content.buttons && a.content.buttons.length > 0) {
+          a.content.buttons.forEach(b => {
+            botMsg.buttons.push(mapButton(b))
+          })
+        }
+      })
+
+      message.suggestedActions && message.suggestedActions.actions && message.suggestedActions.actions.forEach(a => {
+        botMsg.buttons.push(mapButton(a))
+      })
+
+      if (message.entities && message.entities.length > 0) {
+        botMsg.entities = message.entities.map(e => ({
+          name: e.name,
+          value: e.value
+        }))
+      }
+
+      if (!botMsg.messageText && botMsg.cards) {
+        const card = botMsg.cards.find(c => c.text)
+        if (card && _.isArray(card.text) && card.text.length > 0) {
+          botMsg.messageText = card.text[0]
+        } else if (card && _.isString(card.text)) {
+          botMsg.messageText = card.text
+        }
+      }
+      if (!botMsg.messageText && botMsg.buttons) {
+        const button = botMsg.buttons.find(b => b.text)
+        if (button) {
+          botMsg.messageText = button.text
+        }
+      }
+    } else {
+      const valueMap = this.caps.DIRECTLINE3_ACTIVITY_VALUE_MAP
+      if (valueMap && valueMap[message.type]) {
+        botMsg.messageText = message[valueMap[message.type]]
+      } else {
+        botMsg.messageText = message.type
+      }
+    }
+
+    return botMsg
+  }
+
+  // can be used externally without starting the connector
+  BotiumMsgToActivity (msg, me) {
     const activity = Object.assign({}, msg.sourceData || this.caps.DIRECTLINE3_ACTIVITY_TEMPLATE || {})
     if (msg.buttons && msg.buttons.length > 0 && (msg.buttons[0].text || msg.buttons[0].payload)) {
       let payload = msg.buttons[0].payload || msg.buttons[0].text
@@ -362,9 +365,9 @@ class BotiumConnectorDirectline3 {
       }
     }
     if (!activity.from) {
-      activity.from = { id: this.me }
+      activity.from = { id: me }
     } else if (!activity.from.id) {
-      activity.from.id = this.me
+      activity.from.id = me
     }
 
     if (msg.forms) {
@@ -392,78 +395,90 @@ class BotiumConnectorDirectline3 {
       }
     }
 
-    if (msg.media && msg.media.length > 0) {
-      debug('Posting activity with attachments ', JSON.stringify(activity, null, 2))
-      msg.sourceData = Object.assign(msg.sourceData || {}, { activity })
+    return activity
+  }
 
-      const formData = new FormData()
+  // can be used externally without starting the connector
+  async PostActivatityWithAttachments (activity, msg, domain, conversationId, directLine, token) {
+    debug('Posting activity with attachments ', JSON.stringify(activity, null, 2))
+    msg.sourceData = Object.assign(msg.sourceData || {}, { activity })
 
-      formData.append('activity', Buffer.from(JSON.stringify(activity)), {
-        contentType: 'application/vnd.microsoft.activity',
-        filename: 'blob'
-      })
+    const formData = new FormData()
 
-      for (let i = 0; i < msg.media.length; i++) {
-        const attachment = msg.media[i]
-        const attachmentName = path.basename(attachment.mediaUri)
+    formData.append('activity', Buffer.from(JSON.stringify(activity)), {
+      contentType: 'application/vnd.microsoft.activity',
+      filename: 'blob'
+    })
 
-        if (attachment.buffer) {
-          formData.append('file', attachment.buffer, {
-            filename: attachmentName
-          })
-        } else if (attachment.downloadUri && attachment.downloadUri.startsWith('file://')) {
-          // This check is maybe not required. If possible and safe, MediaImport extracts Buffer from downloadUri.
-          // This if-case should not be called at all.
-          if (!this.caps[CoreCapabilities.SECURITY_ALLOW_UNSAFE]) {
-            throw new BotiumError(
-              'Security Error. Illegal configured MediaInput. Sending attachment using the filesystem is not allowed',
-              {
-                type: 'security',
-                subtype: 'allow unsafe',
-                source: 'botium-connector-directline',
-                cause: { attachment }
-              }
-            )
-          }
-          const filepath = attachment.downloadUri.split('file://')[1]
-          formData.append('file', fs.createReadStream(filepath), {
-            filename: attachmentName
-          })
-        } else if (attachment.downloadUri) {
-          const res = await fetch(attachment.downloadUri)
-          const body = await res.buffer()
+    for (let i = 0; i < msg.media.length; i++) {
+      const attachment = msg.media[i]
+      const attachmentName = path.basename(attachment.mediaUri)
 
-          formData.append('file', body, {
-            filename: attachmentName
-          })
-        } else {
-          throw new Error(`Media attachment ${attachment.mediaUri} not downloaded`)
+      if (attachment.buffer) {
+        formData.append('file', attachment.buffer, {
+          filename: attachmentName
+        })
+      } else if (attachment.downloadUri && attachment.downloadUri.startsWith('file://')) {
+        // This check is maybe not required. If possible and safe, MediaImport extracts Buffer from downloadUri.
+        // This if-case should not be called at all.
+        if (!this.caps[CoreCapabilities.SECURITY_ALLOW_UNSAFE]) {
+          throw new BotiumError(
+            'Security Error. Illegal configured MediaInput. Sending attachment using the filesystem is not allowed',
+            {
+              type: 'security',
+              subtype: 'allow unsafe',
+              source: 'botium-connector-directline',
+              cause: { attachment }
+            }
+          )
         }
+        const filepath = attachment.downloadUri.split('file://')[1]
+        formData.append('file', fs.createReadStream(filepath), {
+          filename: attachmentName
+        })
+      } else if (attachment.downloadUri) {
+        const res = await fetch(attachment.downloadUri)
+        const body = await res.buffer()
+
+        formData.append('file', body, {
+          filename: attachmentName
+        })
+      } else {
+        throw new Error(`Media attachment ${attachment.mediaUri} not downloaded`)
       }
+    }
 
-      await this.directLine.checkConnection(true)
-      const uploadUrl = `${this.directLine.domain}/conversations/${this.directLine.conversationId}/upload?userId=${activity.from.id}`
-      debug(`Uploading attachments to ${uploadUrl}`)
-      return this._runInQueue(async () => {
-        try {
-          const res = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${this.directLine.token}`
-            },
-            body: formData
-          })
-          const json = await res.json()
-          if (json && json.id) {
-            debug('Posted activity with attachments, assigned ID:', json.id)
-          } else {
-            throw new Error('No activity id returned')
-          }
-        } catch (err) {
-          debug('Error posting activity with attachments', err)
-          throw new Error(`Error posting activity: ${err.message || err}`)
+    directLine && (await directLine.checkConnection(true))
+    const uploadUrl = `${domain}/conversations/${conversationId}/upload?userId=${activity.from.id}`
+    debug(`Uploading attachments to ${uploadUrl}`)
+    return this._runInQueue(async () => {
+      try {
+        const res = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          body: formData
+        })
+        const json = await res.json()
+        if (json && json.id) {
+          debug('Posted activity with attachments, assigned ID:', json.id)
+        } else {
+          throw new Error('No activity id returned')
         }
-      })
+      } catch (err) {
+        debug('Error posting activity with attachments', err)
+        throw new Error(`Error posting activity: ${err.message || err}`)
+      }
+    })
+  }
+
+  async UserSays (msg) {
+    debug('UserSays called')
+
+    const activity = this.BotiumMsgToActivity(msg, this.me)
+    if (msg.media && msg.media.length > 0) {
+      return this.PostActivatityWithAttachments(activity, msg, this.directLine.domain, this.directLine.conversationId, this.directLine.token)
     } else {
       debug('Posting activity ', JSON.stringify(activity, null, 2))
       msg.sourceData = Object.assign(msg.sourceData || {}, { activity })
