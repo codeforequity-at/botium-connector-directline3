@@ -8,7 +8,8 @@
     "build": "npm run eslint && rollup -c",
     "eslint": "eslint index.js",
     "eslint-fix": "eslint --fix index.js",
-    "update-dependencies": "npm-check-updates --reject node-fetch -u --timeout 120000"
+    "update-dependencies": "npm-check-updates --reject node-fetch -u --timeout 120000",
+    "test": "echo Just placeholder, no tests here yet"
   },
   "repository": {
     "type": "git",
